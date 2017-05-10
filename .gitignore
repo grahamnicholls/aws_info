@@ -6,6 +6,7 @@ tags
 *secrets
 *rsa
 credentials
+ctags
 
 ### Terraform ###
 # Compiled files
