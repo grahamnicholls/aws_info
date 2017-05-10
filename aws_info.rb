@@ -52,6 +52,18 @@ def err_msg(*words)
 end
 
 def vpcs(region)
+  ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
+  ec2.describe_vpcs.each do |v|
+    v.vpcs.each do |vpc|
+    print("\"#{$profile}\",\"VPC:\",\"#{region}\",\"#{vpc.vpc_id}\",\"#{vpc.cidr_block}\"")
+    if $print_tags
+      vpc.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
+        print(",\"#{tag.key}:#{tag.value}\"")
+      end
+    end
+    print("\n")
+    end
+  end
 end
 
 #EC2 Instances
@@ -467,6 +479,7 @@ def process_command_line(argv)
   $verbose=false
   $show_all=true
   $show_instances=false
+  $show_vpcs=false
   $debug=false
   $verbose=false
   $profile="default"
@@ -572,6 +585,10 @@ def process_command_line(argv)
         $show_all=false
         $show_efs=true
 
+      when /\-?-vpc[s]?/
+        $show_all=false
+        $show_vpcs=true
+        
       when /\-?-redshift/
         $show_all=false
         $show_redshift=true
@@ -650,6 +667,7 @@ def main(argv)
 
   $regions.each do |region|
     debug_msg("Region=[#{region}]")
+    vpcs(region)                if $show_all or $show_vpcs
     ec2_instances(region)       if $show_all or $show_instances
     ec2_volumes(region)         if $show_all or $show_volumes 
     nat_gateways(region)        if $show_all or $show_nats 
