@@ -65,6 +65,18 @@ def vpcs(region)
     end
   end
 end
+def keys(region)
+  verbose_or_debug_msg("Checking keys in region #{region} for profile #{$profile}")
+  ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
+  ec2.describe_key_pairs.each do |k|
+    if not $quiet
+      k.key_pairs.each do |k|
+        print("\"#{$profile}\",\"Key Pair\",\"#{region}\",\"#{k.key_name}\",\"#{k.key_fingerprint}\"\n")
+      end
+    end
+    $key_count+=1
+  end
+end
 
 #EC2 Instances
 def ec2_instances(region)
@@ -471,7 +483,8 @@ def display_totals()
   print("Elastic IPs: #{$eip_count}\n")            if $show_all or $show_eip
   print("Elastic Filesystems #{$efs_count}\n")     if $show_all or $show_efs
   print("Elasticache(s)  #{$elasticache_count}\n") if $show_all or $show_elasticache
-  print("Redshift Clusters #{$redshift_count}\n")   if $show_all or $show_redshift
+  print("Redshift Clusters #{$redshift_count}\n")  if $show_all or $show_redshift
+  print("Key pairs #{$key_count}\n")               if $show_all or $show_keys
   print("Users : #{$user_count}\n")                if $show_all or $show_users
 end
 
@@ -552,6 +565,10 @@ def process_command_line(argv)
 
       when '-t', /\-?-tags?/
         $print_tags=true
+
+      when /\-?-key[s]?/
+        $show_all=false
+        $show_keys=true
 
       when /\-?-region/
         $regions=[ argv.pop() ]
@@ -657,6 +674,7 @@ def main(argv)
   $user_count=0
   $redshift_count=0
   $igw_count=0
+  $key_count=0
 
   $version="0.25"
   $progname=File.basename( $PROGRAM_NAME )
@@ -679,6 +697,7 @@ def main(argv)
     efs(region)                 if $show_all or $show_efs
     elasticache(region)         if $show_all or $show_elasticache
     redshift(region)            if $show_all or $show_redshift
+    keys(region)                if $show_all or $show_keys
   end
   # Non-regional stuff:
   s3_info()                   if $show_all or $show_s3
