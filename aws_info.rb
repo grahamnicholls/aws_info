@@ -65,6 +65,27 @@ def vpcs(region)
     end
   end
 end
+
+def subnets(region)
+  verbose_or_debug_msg("Checking subnets in region #{region} for profile #{$profile}")
+  ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
+  ec2.describe_subnets.each do |s|
+    if not $quiet
+      s.subnets.each do |s|
+        print("\"#{$profile}\",\"Subnet\",\"#{region}\",\"#{s.subnet_id}\",\"#{s.vpc_id}\",\"#{s.availability_zone}\",\"#{s.cidr_block}\",\"#{s.default_for_az}\"")
+        if $print_tags
+          s.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
+            print(",\"#{tag.key}:#{tag.value}\"")
+          end
+        end
+        print("\n")
+        $subnet_count+=1
+      end
+    end
+  end
+end
+
+
 def keys(region)
   verbose_or_debug_msg("Checking keys in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
@@ -485,7 +506,8 @@ def display_totals()
   print("Elasticache(s)  #{$elasticache_count}\n") if $show_all or $show_elasticache
   print("Redshift Clusters #{$redshift_count}\n")  if $show_all or $show_redshift
   print("Key pairs #{$key_count}\n")               if $show_all or $show_keys
-  print("Users : #{$user_count}\n")                if $show_all or $show_users
+  print("Users  #{$user_count}\n")                 if $show_all or $show_users
+  print("Subnets  #{$subnet_count}\n")             if $show_all or $show_subnets
 end
 
 def process_command_line(argv)
@@ -493,6 +515,7 @@ def process_command_line(argv)
   $show_all=true
   $show_instances=false
   $show_vpcs=false
+  $show_subnets=false
   $debug=false
   $verbose=false
   $profile="default"
@@ -577,7 +600,11 @@ def process_command_line(argv)
         print("Not yet implemented\n")
         exit(1)
 
-      when '-s', /\-?-snapshots/
+      when /\-?-subnet[s]?/
+        $show_all=false
+        $show_subnets=true
+
+      when /\-?-snapshot[s]?/
         $show_all=false
         $show_snapshots=true
 
@@ -621,7 +648,7 @@ def process_command_line(argv)
       when /\-?-verbose/
         $verbose=true
 
-      when /\-?-summarize/
+      when /\-?-sum(marize)?/
         $summarize=true
         
       when /\-?-version/
@@ -675,6 +702,7 @@ def main(argv)
   $redshift_count=0
   $igw_count=0
   $key_count=0
+  $subnet_count=0
 
   $version="0.25"
   $progname=File.basename( $PROGRAM_NAME )
@@ -686,6 +714,7 @@ def main(argv)
   $regions.each do |region|
     debug_msg("Region=[#{region}]")
     vpcs(region)                if $show_all or $show_vpcs
+    subnets(region)             if $show_all or $show_subnets
     ec2_instances(region)       if $show_all or $show_instances
     ec2_volumes(region)         if $show_all or $show_volumes 
     nat_gateways(region)        if $show_all or $show_nats 
