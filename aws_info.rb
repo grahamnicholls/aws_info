@@ -224,7 +224,7 @@ def security_groups(region)
   groups=ec2.describe_security_groups
   groups.security_groups.each do |s|
     if not $quiet
-      print("\"#{$profile}\",\"Security Group\",\"#{region}\",\"#{s.group_id}\",\"#{s.description}\",\"#{s.vpc_id}\"")
+      print("\"#{$profile}\",\"Security Group\",\"#{region}\",\"#{s.group_id}\",\"#{s.vpc_id}\",\"#{s.description}\"")
       if $print_tags
         s.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
           print("\",\"#{tag.key}:#{tag.value}\"")
