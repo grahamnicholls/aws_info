@@ -525,23 +525,24 @@ end
 
 def display_totals()
   print("Totals:\n")
-  print("VPCs: #{$vpc_count}\n")                   if $show_all or $show_vpcs
-  print("Instances: #{$instance_count}\n")         if $show_all or $show_instances
-  print("AMIs: #{$ami_count}\n")                   if $show_all or $show_amis
-  print("Volumes: #{$volume_count}\n")             if $show_all or $show_volumes 
-  print("NAT Gateways: #{$gateway_count}\n")       if $show_all or $show_nats 
-  print("Internet Gateways: #{$gateway_count}\n")  if $show_all or $show_igws 
-  print("Snapshots: #{$snap_count}\n")             if $show_all or $show_snapshots 
-  print("RDS instances: #{$rds_count}\n")          if $show_all or $show_rds 
-  print("Load Balancers: #{$lb_count}\n")          if $show_all or $show_loadbalancers
-  print("Elastic IPs: #{$eip_count}\n")            if $show_all or $show_eip
-  print("Elastic Filesystems #{$efs_count}\n")     if $show_all or $show_efs
-  print("Elasticache(s)  #{$elasticache_count}\n") if $show_all or $show_elasticache
-  print("Redshift Clusters #{$redshift_count}\n")  if $show_all or $show_redshift
-  print("Key pairs #{$key_count}\n")               if $show_all or $show_keys
-  print("Users  #{$user_count}\n")                 if $show_all or $show_users
-  print("Subnets  #{$subnet_count}\n")             if $show_all or $show_subnets
-  print("S3 Buckets #{$bucket_count}\n")           if $show_all or $show_buckets
+  print("VPCs: #{$vpc_count}\n")                      if $show_all or $show_vpcs
+  print("Instances: #{$instance_count}\n")            if $show_all or $show_instances
+  print("AMIs: #{$ami_count}\n")                      if $show_all or $show_amis
+  print("Volumes: #{$volume_count}\n")                if $show_all or $show_volumes 
+  print("NAT Gateways: #{$gateway_count}\n")          if $show_all or $show_nats 
+  print("Internet Gateways: #{$gateway_count}\n")     if $show_all or $show_igws 
+  print("Snapshots: #{$snap_count}\n")                if $show_all or $show_snapshots 
+  print("RDS instances: #{$rds_count}\n")             if $show_all or $show_rds 
+  print("Load Balancers: #{$lb_count}\n")             if $show_all or $show_loadbalancers
+  print("Elastic IPs: #{$eip_count}\n")               if $show_all or $show_eip
+  print("Elastic Filesystems #{$efs_count}\n")        if $show_all or $show_efs
+  print("Elasticache(s)  #{$elasticache_count}\n")    if $show_all or $show_elasticache
+  print("Redshift Clusters #{$redshift_count}\n")     if $show_all or $show_redshift
+  print("Key pairs #{$key_count}\n")                  if $show_all or $show_keys
+  print("Users  #{$user_count}\n")                    if $show_all or $show_users
+  print("Security Groups #{$security_group_count}\n") if $show_all or $show_security_groups
+  print("Subnets  #{$subnet_count}\n")                if $show_all or $show_subnets
+  print("S3 Buckets #{$bucket_count}\n")              if $show_all or $show_buckets
 end
 
 def process_command_line(argv)
