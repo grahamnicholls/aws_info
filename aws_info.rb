@@ -60,7 +60,7 @@ def amis(region,my_id)
   result=ec2.describe_images( owners: [my_id ])
   result.images.each do |i|
     if not $quiet
-      print("\"#{$profile}\",\"AMI:\",\"#{region}\",\"#{i.image_id}\",\"#{i.root_device_type}\",\"#{i.name}\",\"#{i.description}\",")
+      print("\"#{$profile}\",\"AMI\",\"#{region}\",\"#{i.image_id}\",\"#{i.root_device_type}\",\"#{i.name}\",\"#{i.description}\",")
       print("\"#{i.platform == "windows" ? "windows" : "linux"}\"")
 
       if $print_tags
@@ -80,7 +80,7 @@ def vpcs(region)
   ec2.describe_vpcs.each do |v|
     v.vpcs.each do |vpc|
     if not $quiet
-      print("\"#{$profile}\",\"VPC:\",\"#{region}\",\"#{vpc.vpc_id}\",\"#{vpc.cidr_block}\"")
+      print("\"#{$profile}\",\"VPC\",\"#{region}\",\"#{vpc.vpc_id}\",\"#{vpc.cidr_block}\"")
       if $print_tags
         vpc.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
           print(",\"#{tag.key}:#{tag.value}\"")
@@ -142,7 +142,7 @@ def ec2_instances(region)
       $instance_count+=1
       if i.state.name == "running"
         if not $quiet
-          print "\"#{$profile}\",\"Instance:\",\"#{region}\",\"#{i.id}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\""
+          print "\"#{$profile}\",\"Instance\",\"#{region}\",\"#{i.id}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\""
           if $pricing 
             if price_region == NIL
               print(",\"\"")
@@ -206,7 +206,7 @@ def ec2_snapshots(region,my_id)
   snapshots=ec2.snapshots({filters: [{name: "owner-id", values: [ my_id ]}]})
   snapshots.each do |s|
     if not $quiet
-      printf("\"#{$profile}\",\"Snapshot:\",\"%s\",\"%s\",\"%s\",\"%s\"" ,region,s.id,s.volume_size,s.start_time.to_s)
+      printf("\"#{$profile}\",\"Snapshot\",\"%s\",\"%s\",\"%s\",\"%s\"" ,region,s.id,s.volume_size,s.start_time.to_s)
       if $print_tags
         s.tags.each do |tag|
           print("\",\"#{tag.key}:#{tag.value}\"")
@@ -224,7 +224,7 @@ def security_groups(region)
   groups=ec2.describe_security_groups
   groups.security_groups.each do |s|
     if not $quiet
-      print("\"#{$profile}\",\"Security Group:\",\"#{region}\",\"#{s.group_id}\",\"#{s.description}\",\"#{s.vpc_id}\"")
+      print("\"#{$profile}\",\"Security Group\",\"#{region}\",\"#{s.group_id}\",\"#{s.description}\",\"#{s.vpc_id}\"")
       if $print_tags
         s.tags.each do |tag|
           print("\",\"#{tag.key}:#{tag.value}\"")
@@ -242,8 +242,7 @@ def rds_instances(region)
   begin
     rds.db_instances.each do |r|
       if not $quiet
-        #printf("\"#{$profile}\",\"Database:\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"" ,region,r.id,r.db_name,r.db_instance_class,r.engine)
-        print("\"#{$profile}\",\"Database:\",\"#{region}\",\"#{r.id}\",\"#{r.db_name}\",\"#{r.db_instance_class}\",\"#{r.engine}\",\"#{r.db_subnet_group.vpc_id}\"")
+        print("\"#{$profile}\",\"Database\",\"#{region}\",\"#{r.id}\",\"#{r.db_name}\",\"#{r.db_instance_class}\",\"#{r.engine}\",\"#{r.db_subnet_group.vpc_id}\"")
         # Hmmm.  Possibly not yet supported
         #if $print_tags
           #r.tags.each do |tag|
