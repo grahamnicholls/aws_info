@@ -208,7 +208,7 @@ def ec2_snapshots(region,my_id)
     if not $quiet
       printf("\"#{$profile}\",\"Snapshot\",\"%s\",\"%s\",\"%s\",\"%s\"" ,region,s.id,s.volume_size,s.start_time.to_s)
       if $print_tags
-        s.tags.each do |tag|
+        s.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
           print("\",\"#{tag.key}:#{tag.value}\"")
         end
       end
@@ -226,7 +226,7 @@ def security_groups(region)
     if not $quiet
       print("\"#{$profile}\",\"Security Group\",\"#{region}\",\"#{s.group_id}\",\"#{s.description}\",\"#{s.vpc_id}\"")
       if $print_tags
-        s.tags.each do |tag|
+        s.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
           print("\",\"#{tag.key}:#{tag.value}\"")
         end
       end
@@ -280,7 +280,7 @@ def internet_gateways(region)
         print(",\"#{a.vpc_id}\"")
       end
       if $print_tags
-        gw.tags.each do |tag|
+        gw.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
           print("\",\"#{tag.key}:#{tag.value}\"")
         end
       end
@@ -400,7 +400,7 @@ def efs(region)
       if not $quiet
         print("\"#{$profile}\",\"EFS\",\"#{region}\",\"#{fs.creation_token}\",\"#{fs.file_system_id}\",\"#{fs.size_in_bytes['value']}\"")
         if $print_tags
-          fs.tags.each do |tag|
+          fs.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
             print("\",\"#{tag.key}:#{tag.value}\"")
           end
         end
