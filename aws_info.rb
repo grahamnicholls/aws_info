@@ -165,9 +165,8 @@ def ec2_instances(region)
   end
 end
 
-# EBS:
 def ec2_volumes(region)
-  verbose_or_debug_msg("Checking EC2 volumes in region #{region} for profile #{$profile}")
+  verbose_or_debug_msg("Checking EC2 EBS volumes in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Resource.new(region: region, credentials: $credentials)
   if $pricing
     verbose_or_debug_msg("Gathering EBS pricing info for region #{region}")
@@ -180,10 +179,9 @@ def ec2_volumes(region)
   ec2.volumes.each do |v|
     if v.state !~ /delet/
       if not $quiet
-        printf("\"#{$profile}\",\"Volume:\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"" ,region,v.id,v.size,v.volume_type,v.state)
-        
+        print("\"#{$profile}\",\"Volume\",\"#{region}\",\"#{v.id}\",\"#{v.size}\",\"#{v.volume_type}\",\"#{v.state}\"")
         #if $pricing
-          print("Price info\n")
+          #print("Price info\n")
           #if prices == NIL or not prices.has_key?(v.volume_type)
             #price_region.each do |p|
               #print("price for #{p.name}, = #{p.values.prices}\n")
@@ -222,11 +220,11 @@ end
 
 def security_groups(region)
   verbose_or_debug_msg("Checking Security Groups in region \"#{region}\n")
-  ec2 = Aws::EC2::Resource.new(region: region, credentials: $credentials)
-  groups=ec2.snapshots
-  groups.each do |s|
+  ec2 = Aws::EC2::Client.new(region: region, credentials: $credentials)
+  groups=ec2.describe_security_groups
+  groups.security_groups.each do |s|
     if not $quiet
-      printf("\"#{$profile}\",\"Snapshot:\",\"%s\",\"%s\",\"%s\",\"%s\"" ,region,s.id,s.volume_size,s.start_time.to_s)
+      print("\"#{$profile}\",\"Security Group:\",\"#{region}\",\"#{s.group_id}\",\"#{s.description}\",\"#{s.vpc_id}\"")
       if $print_tags
         s.tags.each do |tag|
           print("\",\"#{tag.key}:#{tag.value}\"")
@@ -234,7 +232,7 @@ def security_groups(region)
       end
       print("\n")
     end
-    $snap_count+=1
+    $security_group_count+=1
   end
 end
 
@@ -278,7 +276,7 @@ def internet_gateways(region)
   result = ec2.describe_internet_gateways()
   result.internet_gateways.each do |gw|
     if not $quiet
-      print("\"#{$profile}\",\"Internet Gateway:\",\"#{region}\",\"#{gw.internet_gateway_id}\"")
+      print("\"#{$profile}\",\"Internet Gateway\",\"#{region}\",\"#{gw.internet_gateway_id}\"")
       gw.attachments.each do |a|
         print(",\"#{a.vpc_id}\"")
       end
@@ -302,7 +300,7 @@ def nat_gateways(region)
     result = ec2.describe_nat_gateways()
     result.nat_gateways.each do |gw|
       if not $quiet
-        print "\"#{$profile}\",\"NAT Gateway:\",\"#{region}\",\"#{gw.vpc_id}\",\"#{gw.nat_gateway_id}\",\"#{gw.subnet_id}\"\n"
+        print "\"#{$profile}\",\"NAT Gateway\",\"#{region}\",\"#{gw.vpc_id}\",\"#{gw.nat_gateway_id}\",\"#{gw.subnet_id}\"\n"
       end
       $gateway_count+=1
     end
@@ -331,7 +329,7 @@ def load_balancers(region)
   lbs=client.describe_load_balancers()
   lbs.load_balancer_descriptions.each do |lb_desc|
     if not $quiet
-      print "\"#{$profile}\",\"Load Balancer:\",\"#{region}\",\"#{lb_desc.vpc_id}\",\"#{lb_desc.load_balancer_name}\",\"#{lb_desc.scheme}\""
+      print "\"#{$profile}\",\"Load Balancer\",\"#{region}\",\"#{lb_desc.vpc_id}\",\"#{lb_desc.load_balancer_name}\",\"#{lb_desc.scheme}\""
       # TODO:
       #if $print_tags
         #lb_desc.tags.each do |tag|
@@ -670,6 +668,10 @@ def process_command_line(argv)
         $show_all=false
         $show_vpcs=true
         
+      when /\-?-security.*/
+        $show_all=false
+        $show_security_groups=true
+
       when /\-?-redshift/
         $show_all=false
         $show_redshift=true
@@ -743,6 +745,7 @@ def main(argv)
   $igw_count=0
   $key_count=0
   $subnet_count=0
+  $security_group_count=0
 
   $version="0.25"
   $progname=File.basename( $PROGRAM_NAME )
@@ -764,6 +767,7 @@ def main(argv)
     ec2_snapshots(region,my_id) if $show_all or $show_snapshots 
     rds_instances(region)       if $show_all or $show_rds 
     load_balancers(region)      if $show_all or $show_loadbalancers
+    security_groups(region)     if $show_all or $show_security_groups
     eips(region)                if $show_all or $show_eip
     efs(region)                 if $show_all or $show_efs
     elasticache(region)         if $show_all or $show_elasticache
