@@ -25,14 +25,17 @@ def debug_msg(*words)
 end
 
 def verbose_or_debug_msg(*words)
-  $stderr.print("DEBUG ") if $debug
-  if $verbose or $debug
+  if $debug
+    debug_msg(*words)
+    return
+  end
+  if $verbose 
     words.each do |word|
       $stderr.print("#{word} ")
     end
     $stderr.print("\n")
+    $stderr.flush()
   end
-  $stderr.flush()
 end
 
 def verbose_msg(*words)
@@ -51,17 +54,41 @@ def err_msg(*words)
   $stderr.print("\n")
 end
 
+def amis(region,my_id)
+  verbose_or_debug_msg("Checking AMIs in region #{region} for profile #{$profile} owned by id #{my_id}")
+  ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
+  result=ec2.describe_images( owners: [my_id ])
+  result.images.each do |i|
+    if not $quiet
+      print("\"#{$profile}\",\"AMI:\",\"#{region}\",\"#{i.image_id}\",\"#{i.root_device_type}\",\"#{i.name}\",\"#{i.description}\",")
+      print("\"#{i.platform == "windows" ? "windows" : "linux"}\"")
+
+      if $print_tags
+        i.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
+          print(",\"#{tag.key}:#{tag.value}\"")
+        end
+      end
+      print("\n")
+    end
+    $ami_count+=1
+  end
+end
+
 def vpcs(region)
+  verbose_or_debug_msg("Checking VPCs in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
   ec2.describe_vpcs.each do |v|
     v.vpcs.each do |vpc|
-    print("\"#{$profile}\",\"VPC:\",\"#{region}\",\"#{vpc.vpc_id}\",\"#{vpc.cidr_block}\"")
-    if $print_tags
-      vpc.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-        print(",\"#{tag.key}:#{tag.value}\"")
+    if not $quiet
+      print("\"#{$profile}\",\"VPC:\",\"#{region}\",\"#{vpc.vpc_id}\",\"#{vpc.cidr_block}\"")
+      if $print_tags
+        vpc.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
+          print(",\"#{tag.key}:#{tag.value}\"")
+        end
       end
+      print("\n")
     end
-    print("\n")
+    $vpc_count+=1
     end
   end
 end
@@ -70,8 +97,9 @@ def subnets(region)
   verbose_or_debug_msg("Checking subnets in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
   ec2.describe_subnets.each do |s|
-    if not $quiet
-      s.subnets.each do |s|
+    s.subnets.each do |s|
+      $subnet_count+=1
+      if not $quiet
         print("\"#{$profile}\",\"Subnet\",\"#{region}\",\"#{s.subnet_id}\",\"#{s.vpc_id}\",\"#{s.availability_zone}\",\"#{s.cidr_block}\",\"#{s.default_for_az}\"")
         if $print_tags
           s.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
@@ -79,7 +107,6 @@ def subnets(region)
           end
         end
         print("\n")
-        $subnet_count+=1
       end
     end
   end
@@ -90,12 +117,12 @@ def keys(region)
   verbose_or_debug_msg("Checking keys in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
   ec2.describe_key_pairs.each do |k|
-    if not $quiet
-      k.key_pairs.each do |k|
+    k.key_pairs.each do |k|
+      $key_count+=1
+      if not $quiet
         print("\"#{$profile}\",\"Key Pair\",\"#{region}\",\"#{k.key_name}\",\"#{k.key_fingerprint}\"\n")
       end
     end
-    $key_count+=1
   end
 end
 
@@ -112,6 +139,7 @@ def ec2_instances(region)
   end
   begin
     ec2.instances.each do |i|
+      $instance_count+=1
       if i.state.name == "running"
         if not $quiet
           print "\"#{$profile}\",\"Instance:\",\"#{region}\",\"#{i.id}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\""
@@ -135,7 +163,6 @@ def ec2_instances(region)
     err_msg("Authentication failure for profile #{$profile} - (#{err}) - exiting\n")
     exit(E_AUTH_FAILURE)
   end
-  $instance_count+=1
 end
 
 # EBS:
@@ -327,7 +354,10 @@ def s3_info()
   # If we've not specified details, then simply list the buckets and return.
   if ! $s3_details
     s3_resource.buckets.each do |b|
-      print("\"#{$profile}\",\"S3 Bucket\",\"All\",\"#{b.name}\",\"#{b.creation_date}\"\n")
+      if not $quiet
+        print("\"#{$profile}\",\"S3 Bucket\",\"All\",\"#{b.name}\",\"#{b.creation_date}\"\n")
+      end
+    $bucket_count+=1
     end
     return
   end
@@ -353,9 +383,12 @@ def s3_info()
             total_size+=object.size
           end
         end
-        print("\"#{$profile}\",\"s3 bucket\",\"#{region}\",\"#{bucket.name}\",\"#{total_size}\"\n")
-        all_buckets[bucket.name]=true
+        if not $quiet
+          print("\"#{$profile}\",\"s3 bucket\",\"#{region}\",\"#{bucket.name}\",\"#{total_size}\"\n")
+          all_buckets[bucket.name]=true
+        end
       end
+      $bucket_count+=1
     rescue Aws::S3::Errors::ServiceError => err
       debug_msg("#{err.inspect()}\n")
     end
@@ -494,11 +527,13 @@ end
 
 def display_totals()
   print("Totals:\n")
+  print("VPCs: #{$vpc_count}\n")                   if $show_all or $show_vpcs
   print("Instances: #{$instance_count}\n")         if $show_all or $show_instances
+  print("AMIs: #{$ami_count}\n")                   if $show_all or $show_amis
   print("Volumes: #{$volume_count}\n")             if $show_all or $show_volumes 
   print("NAT Gateways: #{$gateway_count}\n")       if $show_all or $show_nats 
   print("Internet Gateways: #{$gateway_count}\n")  if $show_all or $show_igws 
-  print("Snapshots: #{$snapshot_count}\n")         if $show_all or $show_snapshots 
+  print("Snapshots: #{$snap_count}\n")             if $show_all or $show_snapshots 
   print("RDS instances: #{$rds_count}\n")          if $show_all or $show_rds 
   print("Load Balancers: #{$lb_count}\n")          if $show_all or $show_loadbalancers
   print("Elastic IPs: #{$eip_count}\n")            if $show_all or $show_eip
@@ -508,6 +543,7 @@ def display_totals()
   print("Key pairs #{$key_count}\n")               if $show_all or $show_keys
   print("Users  #{$user_count}\n")                 if $show_all or $show_users
   print("Subnets  #{$subnet_count}\n")             if $show_all or $show_subnets
+  print("S3 Buckets #{$bucket_count}\n")           if $show_all or $show_buckets
 end
 
 def process_command_line(argv)
@@ -517,7 +553,6 @@ def process_command_line(argv)
   $show_vpcs=false
   $show_subnets=false
   $debug=false
-  $verbose=false
   $profile="default"
   $credentials=""
   $summarize=false
@@ -533,10 +568,13 @@ def process_command_line(argv)
   argv.reverse!
   until argv.empty? do
     arg=argv.pop
-    debug_msg("process command-line : argv=[#{argv}], arg=[#{arg}]")
     case arg
       when '-a', /\-?-all/
         $show_all=true
+
+      when /\-?-ami[s]?/
+        $show_all=false
+        $show_amis=true
 
       when '-d', /\-?-debug/
         $continue_on_permissions_error=true
@@ -579,7 +617,6 @@ def process_command_line(argv)
 
       when /-q/, /\-?-quiet/
         debug_msg("Quiet mode enabled")
-        $verbose=false
         $quiet=true
 
       when '-r', /\-?-rds/
@@ -648,7 +685,7 @@ def process_command_line(argv)
       when /\-?-verbose/
         $verbose=true
 
-      when /\-?-sum(marize)?/
+      when /\-?-sum(mari[sz]e)?/
         $summarize=true
         
       when /\-?-version/
@@ -688,9 +725,12 @@ end
 
 def main(argv)
   $instance_count=0
+  $bucket_count=0
+  $ami_count=0
   $snap_count=0
   $ec2_count=0
   $volume_count=0
+  $vpc_count=0
   $gateway_count=0
   $rds_count=0
   $eip_count=0
@@ -714,8 +754,10 @@ def main(argv)
   $regions.each do |region|
     debug_msg("Region=[#{region}]")
     vpcs(region)                if $show_all or $show_vpcs
+
     subnets(region)             if $show_all or $show_subnets
     ec2_instances(region)       if $show_all or $show_instances
+    amis(region,my_id)          if $show_all or $show_amis
     ec2_volumes(region)         if $show_all or $show_volumes 
     nat_gateways(region)        if $show_all or $show_nats 
     internet_gateways(region)   if $show_all or $show_igws
