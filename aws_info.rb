@@ -218,6 +218,45 @@ def ec2_snapshots(region,my_id)
   end
 end
 
+def route_tables(region)
+  verbose_or_debug_msg("Checking Route Tables in region \"#{region}\n")
+  client = Aws::EC2::Client.new(region: region, credentials: $credentials)
+  client.describe_route_tables.each do |routes_array|
+    routes_array.route_tables.each do |r|
+      if not $quiet
+        print("\"#{$profile}\",\"Route Table\",\"#{region}\",\"#{r.route_table_id}\",\"#{r.vpc_id}\",\"#{r.associations.length}\"")
+        if $print_tags
+          r.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
+            print(",\"#{tag.key}:#{tag.value}\"")
+          end
+        end
+        print("\n")
+        $route_table_count+=1
+      end
+    end
+  end
+end
+
+def nacls(region)
+  verbose_or_debug_msg("Checking NACLs in region \"#{region}\n")
+  client = Aws::EC2::Client.new(region: region, credentials: $credentials)
+  client.describe_network_acls.each do |nacl_array|
+    nacl_array.network_acls.each do |n|
+      if not $quiet
+        print("\"#{$profile}\",\"NACL\",\"#{region}\",\"#{n.network_acl_id}\",\"#{n.vpc_id}\",\"#{n.is_default}\",")
+        print("\"#{n.associations.length}\"")
+        if $print_tags
+          n.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
+            print(",\"#{tag.key}:#{tag.value}\"")
+          end
+        end
+        print("\n")
+        $nacl_count+=1
+      end
+    end
+  end
+end
+
 def security_groups(region)
   verbose_or_debug_msg("Checking Security Groups in region \"#{region}\n")
   ec2 = Aws::EC2::Client.new(region: region, credentials: $credentials)
@@ -530,6 +569,7 @@ def display_totals()
   print("Volumes: #{$volume_count}\n")                if $show_all or $show_volumes 
   print("NAT Gateways: #{$gateway_count}\n")          if $show_all or $show_nats 
   print("Internet Gateways: #{$gateway_count}\n")     if $show_all or $show_igws 
+  print("Route Tables: #{$route_table_count}\n")      if $show_all or $show_routes 
   print("Snapshots: #{$snap_count}\n")                if $show_all or $show_snapshots 
   print("RDS instances: #{$rds_count}\n")             if $show_all or $show_rds 
   print("Load Balancers: #{$lb_count}\n")             if $show_all or $show_loadbalancers
@@ -540,6 +580,7 @@ def display_totals()
   print("Key pairs #{$key_count}\n")                  if $show_all or $show_keys
   print("Users  #{$user_count}\n")                    if $show_all or $show_users
   print("Security Groups #{$security_group_count}\n") if $show_all or $show_security_groups
+  print("NACLS #{$nacl_count}\n")                     if $show_all or $show_nacls
   print("Subnets  #{$subnet_count}\n")                if $show_all or $show_subnets
   print("S3 Buckets #{$bucket_count}\n")              if $show_all or $show_buckets
 end
@@ -616,6 +657,14 @@ def process_command_line(argv)
       when /-q/, /\-?-quiet/
         debug_msg("Quiet mode enabled")
         $quiet=true
+
+      when /\-?-nacl[s]?/
+        $show_all=false
+        $show_nacls=true
+
+      when /\-?-route.*/
+        $show_all=false
+        $show_routes=true
 
       when '-r', /\-?-rds/
         $show_all=false
@@ -746,6 +795,8 @@ def main(argv)
   $key_count=0
   $subnet_count=0
   $security_group_count=0
+  $nacl_count=0
+  $route_table_count=0
 
   $version="0.25"
   $progname=File.basename( $PROGRAM_NAME )
@@ -763,11 +814,13 @@ def main(argv)
     amis(region,my_id)          if $show_all or $show_amis
     ec2_volumes(region)         if $show_all or $show_volumes 
     nat_gateways(region)        if $show_all or $show_nats 
+    route_tables(region)        if $show_all or $show_routes
     internet_gateways(region)   if $show_all or $show_igws
     ec2_snapshots(region,my_id) if $show_all or $show_snapshots 
     rds_instances(region)       if $show_all or $show_rds 
     load_balancers(region)      if $show_all or $show_loadbalancers
     security_groups(region)     if $show_all or $show_security_groups
+    nacls(region)               if $show_all or $show_nacls
     eips(region)                if $show_all or $show_eip
     efs(region)                 if $show_all or $show_efs
     elasticache(region)         if $show_all or $show_elasticache
