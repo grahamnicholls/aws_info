@@ -116,8 +116,8 @@ end
 def keys(region)
   verbose_or_debug_msg("Checking keys in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
-  ec2.describe_key_pairs.each do |k|
-    k.key_pairs.each do |k|
+  ec2.describe_key_pairs.each do |kp|
+    kp.key_pairs.each do |k|
       $key_count+=1
       if not $quiet
         print("\"#{$profile}\",\"Key Pair\",\"#{region}\",\"#{k.key_name}\",\"#{k.key_fingerprint}\"\n")
@@ -139,11 +139,12 @@ def ec2_instances(region)
   end
   begin
     ec2.instances.each do |i|
-      $instance_count+=1
-      if i.state.name == "running"
+      if i.state.name == "running" or i.state.name == "stopped"
+        $running_i_count+=1 if i.state.name == "running"
+        $stopped_i_count+=1 if i.state.name == "stopped"
         if not $quiet
-          print "\"#{$profile}\",\"Instance\",\"#{region}\",\"#{i.id}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\""
-          if $pricing 
+          print "\"#{$profile}\",\"Instance\",\"#{region}\",\"#{i.id}\",\"#{i.state.name}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\""
+          if $pricing and i.state.name == "running"
             if price_region == NIL
               print(",\"\"")
             else
@@ -564,7 +565,8 @@ end
 def display_totals()
   print("Totals:\n")
   print("VPCs: #{$vpc_count}\n")                      if $show_all or $show_vpcs
-  print("Instances: #{$instance_count}\n")            if $show_all or $show_instances
+  print("Running Instances: #{$running_i_count}\n")   if $show_all or $show_instances
+  print("Stopped Instances: #{$stopped_i_count}\n")   if $show_all or $show_instances
   print("AMIs: #{$ami_count}\n")                      if $show_all or $show_amis
   print("Volumes: #{$volume_count}\n")                if $show_all or $show_volumes 
   print("NAT Gateways: #{$gateway_count}\n")          if $show_all or $show_nats 
@@ -775,7 +777,8 @@ def check_creds()
 end
 
 def main(argv)
-  $instance_count=0
+  $running_i_count=0
+  $stopped_i_count=0
   $bucket_count=0
   $ami_count=0
   $snap_count=0
