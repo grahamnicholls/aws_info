@@ -556,7 +556,6 @@ def limits(region)
   max_eips=0
   sgs_per_if=0
   attributes.each do |a|
-    print("********** #{a.attribute_name}\n")
     case a.attribute_name
       when 'vpc-max-elastic-ips'
         max_eips=a.attribute_values[0].attribute_value
@@ -564,7 +563,6 @@ def limits(region)
         max_inst=a.attribute_values[0].attribute_value
       when 'vpc-max-security-groups-per-interface'
         sgs_per_if=a.attribute_values[0].attribute_value
-
     end
   end
   print("\"#{$profile}\",\"#{region}\",\"Limits\",\"#{max_inst}\",\"#{max_eips}\",\"#{sgs_per_if}\"\n")
