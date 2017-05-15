@@ -144,8 +144,8 @@ def ec2_instances(region)
         $stopped_i_count+=1 if i.state.name == "stopped"
         if not $quiet
           print "\"#{$profile}\",\"Instance\",\"#{region}\",\"#{i.id}\",\"#{i.state.name}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\""
-          if $pricing and i.state.name == "running"
-            if price_region == NIL
+          if $pricing 
+            if price_region == NIL or i.state.name == "stopped"
               print(",\"\"")
             else
               print(",\"#{prices[i.instance_type]}\"")
