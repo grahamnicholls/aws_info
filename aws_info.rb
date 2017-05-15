@@ -565,7 +565,7 @@ def limits(region)
         sgs_per_if=a.attribute_values[0].attribute_value
     end
   end
-  print("\"#{$profile}\",\"#{region}\",\"Limits\",\"#{max_inst}\",\"#{max_eips}\",\"#{sgs_per_if}\"\n")
+  print("\"#{$profile}\",\"Limits\",\"#{region}\",\"#{max_inst}\",\"#{max_eips}\",\"#{sgs_per_if}\"\n")
 end
 
 def get_account_id(region)
@@ -824,7 +824,7 @@ def main(argv)
   $nacl_count=0
   $route_table_count=0
 
-  $version="1.01"
+  $version="1.02"
   $progname=File.basename( $PROGRAM_NAME )
 
   process_command_line(argv)
