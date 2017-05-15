@@ -548,6 +548,27 @@ def users()
   end
 end
 
+def limits(region)
+  debug_msg("Getting Limits for account info for \"#{$profile}\"")
+  client=Aws::EC2::Client.new(region: region, credentials: $credentials)
+  attributes=client.describe_account_attributes().account_attributes
+  max_inst=0
+  max_eips=0
+  sgs_per_if=0
+  attributes.each do |a|
+    print("********** #{a.attribute_name}\n")
+    case a.attribute_name
+      when 'vpc-max-elastic-ips'
+        max_eips=a.attribute_values[0].attribute_value
+      when 'max-instances'
+        max_inst=a.attribute_values[0].attribute_value
+      when 'vpc-max-security-groups-per-interface'
+        sgs_per_if=a.attribute_values[0].attribute_value
+
+    end
+  end
+  print("\"#{$profile}\",\"#{region}\",\"Limits\",\"#{max_inst}\",\"#{max_eips}\",\"#{sgs_per_if}\"\n")
+end
 
 def get_account_id(region)
   debug_msg("Getting account info for \"#{$profile}\" with credentials \"#{$credentials}")
@@ -620,6 +641,10 @@ def process_command_line(argv)
       when '-d', /\-?-debug/
         $continue_on_permissions_error=true
         $debug=true
+
+      when /\-?-limit(s)?/
+        $show_all=false
+        $show_limits=true
 
       when '-i', /\-?-instances/
         debug_msg("showing instances")
@@ -829,10 +854,11 @@ def main(argv)
     elasticache(region)         if $show_all or $show_elasticache
     redshift(region)            if $show_all or $show_redshift
     keys(region)                if $show_all or $show_keys
+    limits(region)              if $show_all or $show_limits
   end
   # Non-regional stuff:
-  s3_info()                   if $show_all or $show_s3
-  users()                     if $show_all or $show_users
+  s3_info()        if $show_all or $show_s3
+  users()          if $show_all or $show_users
 
   display_totals if $summarize
 end
