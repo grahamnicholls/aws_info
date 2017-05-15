@@ -7,6 +7,9 @@ aws cli, but with a couple of caveats:
 2.  All assets are queried by default
 3.  Costs are added to output (with the --price option)
 
+##Prerequisites
+You'll need the aws-sdk ruby gem installed, and if you use pricing, the aws_pricing gem (awscosts).
+
 ##Example
 So, this command for example:
 
@@ -129,7 +132,8 @@ $ aws_info -t | egrep -i "env(ironment)?:pro?d"
 
 ## Pricing
 Somebody much smarter than me has written a ruby gem to get the AWS pricing.  You'll need that installed _only if you use the
---price command-line option_, as I only require the module if --pricing is specified.
+--price command-line option_, as I only require the module if --pricing is specified.  This makes the program more portable.
+
 
 ## Is it any use?
 
@@ -140,3 +144,6 @@ CLI tools, but
 3.  It's easier to extend a tool which you have the source for.
 4. 
 
+
+##Bugs
+Yep.  There's bug included.  For free. Fork 'em.
