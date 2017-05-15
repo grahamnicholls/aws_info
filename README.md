@@ -147,3 +147,8 @@ CLI tools, but
 
 ##Bugs
 Yep.  There's bug included.  For free. Fork 'em.
+
+##Style
+Too many globals.  I'd like to tidy up the code - I got started thinking I'd just list instances, but found the
+CSV output format so useful that I kept adding things.  Fork it.
+
