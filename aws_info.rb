@@ -824,7 +824,7 @@ def main(argv)
   $nacl_count=0
   $route_table_count=0
 
-  $version="1.00"
+  $version="1.01"
   $progname=File.basename( $PROGRAM_NAME )
 
   process_command_line(argv)
