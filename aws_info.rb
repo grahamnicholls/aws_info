@@ -550,22 +550,53 @@ end
 
 def limits(region)
   debug_msg("Getting Limits for account info for \"#{$profile}\"")
+  #EC2/VPC Limits:
   client=Aws::EC2::Client.new(region: region, credentials: $credentials)
   attributes=client.describe_account_attributes().account_attributes
-  max_inst=0
-  max_eips=0
-  sgs_per_if=0
+
+  print("\"#{$profile}\",\"Limits\",\"#{region}\"")
+  print(",\"EC2\"")
   attributes.each do |a|
-    case a.attribute_name
-      when 'vpc-max-elastic-ips'
-        max_eips=a.attribute_values[0].attribute_value
-      when 'max-instances'
-        max_inst=a.attribute_values[0].attribute_value
-      when 'vpc-max-security-groups-per-interface'
-        sgs_per_if=a.attribute_values[0].attribute_value
-    end
+    print(",\"#{a.attribute_name}:#{a.attribute_values[0].attribute_value}\"")
   end
-  print("\"#{$profile}\",\"#{region}\",\"Limits\",\"#{max_inst}\",\"#{max_eips}\",\"#{sgs_per_if}\"\n")
+
+  # ELB Limits:
+  print(",\"ELB\"")
+  client=Aws::ElasticLoadBalancing::Client.new(region: region, credentials: $credentials)
+  begin
+    client.describe_account_limits.limits.each do |l|
+      if l.name != "supported-platforms"
+        print(",\"#{l.name}:#{l[:max]}\"")
+      end
+    end
+  rescue => err
+    err_msg("You need to upgrade your aws-sdk gem to support load-balancer limits")
+  end
+
+
+  # RDS Limits:
+  print(",\"RDS\"")
+  client=Aws::RDS::Client.new(region: region, credentials: $credentials)
+  rds_limits=client.describe_account_attributes()
+  rds_limits.account_quotas.each do |l|
+    print(",\"#{l.account_quota_name}:#{l.max}\"")
+  end
+
+  # Lambdas:
+    lambda = Aws::Lambda::Client.new(region: region, credentials: $credentials)
+    print(",\"LAMBDA\"")
+    resp=lambda.get_account_settings.account_limit
+    print ("\n*** #{resp} ***\n")
+
+    resp.each do |l|
+      print(",\"#{l.account_limit}\"")
+    end
+  begin
+  rescue => err
+    print(",\"Not supported in region\"")
+  end
+  print("\n")
+
 end
 
 def get_account_id(region)
@@ -573,8 +604,6 @@ def get_account_id(region)
   begin
     sts = Aws::STS::Client.new(region: region, credentials: $credentials)
     my_id= sts.get_caller_identity().account
-    
-    #my_id=sts.new.get_caller_identity.account()
   rescue
     raise
   end
@@ -790,6 +819,7 @@ end
 # Use a call to Client.new to check that our credentials work
 def check_creds()
   debug_msg("Checking credentials for profile \"#{$profile}\"")
+  my_id=""
   begin
     sts = Aws::STS::Client.new(region: "eu-west-1", credentials: $credentials)
     my_id= sts.get_caller_identity().account
@@ -824,7 +854,7 @@ def main(argv)
   $nacl_count=0
   $route_table_count=0
 
-  $version="1.01"
+  $version="1.02"
   $progname=File.basename( $PROGRAM_NAME )
 
   process_command_line(argv)
