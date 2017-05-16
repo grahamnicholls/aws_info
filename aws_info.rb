@@ -550,11 +550,14 @@ end
 
 def limits(region)
   debug_msg("Getting Limits for account info for \"#{$profile}\"")
+  #EC2/VPC Limits:
   client=Aws::EC2::Client.new(region: region, credentials: $credentials)
   attributes=client.describe_account_attributes().account_attributes
   max_inst=0
   max_eips=0
   sgs_per_if=0
+  max_lbs=0
+  max_listeners=0
   attributes.each do |a|
     case a.attribute_name
       when 'vpc-max-elastic-ips'
@@ -565,7 +568,18 @@ def limits(region)
         sgs_per_if=a.attribute_values[0].attribute_value
     end
   end
-  print("\"#{$profile}\",\"Limits\",\"#{region}\",\"#{max_inst}\",\"#{max_eips}\",\"#{sgs_per_if}\"\n")
+  # ELB Limits:
+  client=Aws::ElasticLoadBalancing::Client.new(region: region, credentials: $credentials)
+  lb_limits=client.describe_account_limits
+  lb_limits.limits.each do |l|
+    case l.name
+      when /classic-load-balancers/
+        max_lbs=l[:max]
+      when /classis-listeners/
+        max_listeners=l[:max]
+    end
+  end
+  print("\"#{$profile}\",\"Limits\",\"#{region}\",\"#{max_inst}\",\"#{max_eips}\",\"#{sgs_per_if}\",\"#{max_lbs},\",\"#{max_listeners}\"\n")
 end
 
 def get_account_id(region)
