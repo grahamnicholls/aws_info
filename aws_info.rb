@@ -58,17 +58,22 @@ def amis(region,my_id)
   verbose_or_debug_msg("Checking AMIs in region #{region} for profile #{$profile} owned by id #{my_id}")
   ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
   result=ec2.describe_images( owners: [my_id ])
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/amis","w")
+  else
+    opfile=$stdout
+  end
   result.images.each do |i|
     if not $quiet
-      print("\"#{$profile}\",\"AMI\",\"#{region}\",\"#{i.image_id}\",\"#{i.root_device_type}\",\"#{i.name}\",\"#{i.description}\",")
-      print("\"#{i.platform == "windows" ? "windows" : "linux"}\"")
+
+      opfile.print("\"#{$profile}\",\"AMI\",\"#{region}\",\"#{i.image_id}\",\"#{i.root_device_type}\",\"#{i.name}\",\"#{i.description}\",\"\"#{i.platform == "windows" ? "windows" : "linux"}\"")
 
       if $print_tags
         i.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-          print(",\"#{tag.key}:#{tag.value}\"")
+          opfile.print(",\"#{tag.key}:#{tag.value}\"")
         end
       end
-      print("\n")
+      opfile.print("\n")
     end
     $ami_count+=1
   end
@@ -77,16 +82,22 @@ end
 def vpcs(region)
   verbose_or_debug_msg("Checking VPCs in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/vpcs","w")
+  else
+    opfile=$stdout
+  end
+
   ec2.describe_vpcs.each do |v|
     v.vpcs.each do |vpc|
     if not $quiet
-      print("\"#{$profile}\",\"VPC\",\"#{region}\",\"#{vpc.vpc_id}\",\"#{vpc.cidr_block}\"")
+      opfile.print("\"#{$profile}\",\"VPC\",\"#{region}\",\"#{vpc.vpc_id}\",\"#{vpc.cidr_block}\"")
       if $print_tags
         vpc.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-          print(",\"#{tag.key}:#{tag.value}\"")
+          opfile.print(",\"#{tag.key}:#{tag.value}\"")
         end
       end
-      print("\n")
+      opfile.print("\n")
     end
     $vpc_count+=1
     end
@@ -96,17 +107,22 @@ end
 def subnets(region)
   verbose_or_debug_msg("Checking subnets in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/subnets","w")
+  else
+    opfile=$stdout
+  end
   ec2.describe_subnets.each do |s|
     s.subnets.each do |s|
       $subnet_count+=1
       if not $quiet
-        print("\"#{$profile}\",\"Subnet\",\"#{region}\",\"#{s.subnet_id}\",\"#{s.vpc_id}\",\"#{s.availability_zone}\",\"#{s.cidr_block}\",\"#{s.default_for_az}\"")
+        opfile.print("\"#{$profile}\",\"Subnet\",\"#{region}\",\"#{s.subnet_id}\",\"#{s.vpc_id}\",\"#{s.availability_zone}\",\"#{s.cidr_block}\",\"#{s.default_for_az}\"")
         if $print_tags
           s.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-            print(",\"#{tag.key}:#{tag.value}\"")
+            opfile.print(",\"#{tag.key}:#{tag.value}\"")
           end
         end
-        print("\n")
+        opfile.print("\n")
       end
     end
   end
@@ -116,11 +132,16 @@ end
 def keys(region)
   verbose_or_debug_msg("Checking keys in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Client.new(region: region,credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/keys","w")
+  else
+    opfile=$stdout
+  end
   ec2.describe_key_pairs.each do |kp|
     kp.key_pairs.each do |k|
       $key_count+=1
       if not $quiet
-        print("\"#{$profile}\",\"Key Pair\",\"#{region}\",\"#{k.key_name}\",\"#{k.key_fingerprint}\"\n")
+        opfile.print("\"#{$profile}\",\"Key Pair\",\"#{region}\",\"#{k.key_name}\",\"#{k.key_fingerprint}\"\n")
       end
     end
   end
@@ -130,6 +151,11 @@ end
 def ec2_instances(region)
   verbose_or_debug_msg("Checking running instances in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Resource.new(region: region,credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/instances","w")
+  else
+    opfile=$stdout
+  end
   if $pricing
     verbose_or_debug_msg("Gathering instance pricing info for region #{region}")
     price_region = AWSCosts.region(region)
@@ -143,20 +169,20 @@ def ec2_instances(region)
         $running_i_count+=1 if i.state.name == "running"
         $stopped_i_count+=1 if i.state.name == "stopped"
         if not $quiet
-          print "\"#{$profile}\",\"Instance\",\"#{region}\",\"#{i.id}\",\"#{i.state.name}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\""
+          opfile.print "\"#{$profile}\",\"Instance\",\"#{region}\",\"#{i.id}\",\"#{i.state.name}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\""
           if $pricing 
             if price_region == NIL or i.state.name == "stopped"
-              print(",\"\"")
+              opfile.print(",\"\"")
             else
-              print(",\"#{prices[i.instance_type]}\"")
+              opfile.print(",\"#{prices[i.instance_type]}\"")
             end
           end
           if $print_tags
             i.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-              print(",\"#{tag.key}:#{tag.value}\"")
+              opfile.print(",\"#{tag.key}:#{tag.value}\"")
             end
           end
-          print("\n")
+          opfile.print("\n")
         end
       end
     end
@@ -169,32 +195,29 @@ end
 def ec2_volumes(region)
   verbose_or_debug_msg("Checking EC2 EBS volumes in region #{region} for profile #{$profile}")
   ec2 = Aws::EC2::Resource.new(region: region, credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/volumes","w")
+  else
+    opfile=$stdout
+  end
   if $pricing
     verbose_or_debug_msg("Gathering EBS pricing info for region #{region}")
     price_region=AWSCosts.region(region)
     if price_region != NIL
       prices=price_region.ec2.ebs.price
-      print prices
+      opfile.print prices
     end
   end
   ec2.volumes.each do |v|
     if v.state !~ /delet/
       if not $quiet
-        print("\"#{$profile}\",\"Volume\",\"#{region}\",\"#{v.id}\",\"#{v.size}\",\"#{v.volume_type}\",\"#{v.state}\"")
-        #if $pricing
-          #print("Price info\n")
-          #if prices == NIL or not prices.has_key?(v.volume_type)
-            #price_region.each do |p|
-              #print("price for #{p.name}, = #{p.values.prices}\n")
-            #end
-          #end
-        #end
+        opfile.print("\"#{$profile}\",\"Volume\",\"#{region}\",\"#{v.id}\",\"#{v.size}\",\"#{v.volume_type}\",\"#{v.state}\"")
         if $print_tags
           v.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-            print("\",\"#{tag.key}:#{tag.value}\"")
+            opfile.print("\",\"#{tag.key}:#{tag.value}\"")
           end
         end
-        print("\n")
+        opfile.print("\n")
       end
       $volume_count+=1
     end
@@ -204,16 +227,21 @@ end
 def ec2_snapshots(region,my_id)
   verbose_or_debug_msg("Checking snapshots in region \"#{region} owned by account id \"#{my_id}\"")
   ec2 = Aws::EC2::Resource.new(region: region, credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/snapshots","w")
+  else
+    opfile=$stdout
+  end
   snapshots=ec2.snapshots({filters: [{name: "owner-id", values: [ my_id ]}]})
   snapshots.each do |s|
     if not $quiet
-      printf("\"#{$profile}\",\"Snapshot\",\"%s\",\"%s\",\"%s\",\"%s\"" ,region,s.id,s.volume_size,s.start_time.to_s)
+      opfile.printf("\"#{$profile}\",\"Snapshot\",\"%s\",\"%s\",\"%s\",\"%s\"" ,region,s.id,s.volume_size,s.start_time.to_s)
       if $print_tags
         s.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-          print("\",\"#{tag.key}:#{tag.value}\"")
+          opfile.print("\",\"#{tag.key}:#{tag.value}\"")
         end
       end
-      print("\n")
+      opfile.print("\n")
     end
     $snap_count+=1
   end
@@ -222,16 +250,21 @@ end
 def route_tables(region)
   verbose_or_debug_msg("Checking Route Tables in region \"#{region}\n")
   client = Aws::EC2::Client.new(region: region, credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/route_tables","w")
+  else
+    opfile=$stdout
+  end
   client.describe_route_tables.each do |routes_array|
     routes_array.route_tables.each do |r|
       if not $quiet
-        print("\"#{$profile}\",\"Route Table\",\"#{region}\",\"#{r.route_table_id}\",\"#{r.vpc_id}\",\"#{r.associations.length}\"")
+        opfile.print("\"#{$profile}\",\"Route Table\",\"#{region}\",\"#{r.route_table_id}\",\"#{r.vpc_id}\",\"#{r.associations.length}\"")
         if $print_tags
           r.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-            print(",\"#{tag.key}:#{tag.value}\"")
+            opfile.print(",\"#{tag.key}:#{tag.value}\"")
           end
         end
-        print("\n")
+        opfile.print("\n")
         $route_table_count+=1
       end
     end
@@ -241,17 +274,22 @@ end
 def nacls(region)
   verbose_or_debug_msg("Checking NACLs in region \"#{region}\n")
   client = Aws::EC2::Client.new(region: region, credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/nacls","w")
+  else
+    opfile=$stdout
+  end
   client.describe_network_acls.each do |nacl_array|
     nacl_array.network_acls.each do |n|
       if not $quiet
-        print("\"#{$profile}\",\"NACL\",\"#{region}\",\"#{n.network_acl_id}\",\"#{n.vpc_id}\",\"#{n.is_default}\",")
-        print("\"#{n.associations.length}\"")
+        opfile.print("\"#{$profile}\",\"NACL\",\"#{region}\",\"#{n.network_acl_id}\",\"#{n.vpc_id}\",\"#{n.is_default}\",")
+        opfile.print("\"#{n.associations.length}\"")
         if $print_tags
           n.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-            print(",\"#{tag.key}:#{tag.value}\"")
+            opfile.print(",\"#{tag.key}:#{tag.value}\"")
           end
         end
-        print("\n")
+        opfile.print("\n")
         $nacl_count+=1
       end
     end
@@ -261,16 +299,21 @@ end
 def security_groups(region)
   verbose_or_debug_msg("Checking Security Groups in region \"#{region}\n")
   ec2 = Aws::EC2::Client.new(region: region, credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/security_groups","w")
+  else
+    opfile=$stdout
+  end
   groups=ec2.describe_security_groups
   groups.security_groups.each do |s|
     if not $quiet
-      print("\"#{$profile}\",\"Security Group\",\"#{region}\",\"#{s.group_id}\",\"#{s.vpc_id}\",\"#{s.description}\"")
+      opfile.print("\"#{$profile}\",\"Security Group\",\"#{region}\",\"#{s.group_id}\",\"#{s.vpc_id}\",\"#{s.description}\"")
       if $print_tags
         s.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-          print("\",\"#{tag.key}:#{tag.value}\"")
+          opfile.print("\",\"#{tag.key}:#{tag.value}\"")
         end
       end
-      print("\n")
+      opfile.print("\n")
     end
     $security_group_count+=1
   end
@@ -278,18 +321,17 @@ end
 
 def rds_instances(region)
   verbose_or_debug_msg("Checking RDS instances in region \"#{region}\" for profile \"#{$profile}\"")
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/rds_instances","w")
+  else
+    opfile=$stdout
+  end
   rds = Aws::RDS::Resource.new(region: region, credentials: $credentials)
   begin
     rds.db_instances.each do |r|
       if not $quiet
-        print("\"#{$profile}\",\"Database\",\"#{region}\",\"#{r.id}\",\"#{r.db_name}\",\"#{r.db_instance_class}\",\"#{r.engine}\",\"#{r.db_subnet_group.vpc_id}\"")
-        # Hmmm.  Possibly not yet supported
-        #if $print_tags
-          #r.tags.each do |tag|
-            #print("\",\"#{tag.key}:#{tag.value}\"")
-          #end
-        #end
-        print("\n")
+        opfile.print("\"#{$profile}\",\"Database\",\"#{region}\",\"#{r.id}\",\"#{r.db_name}\",\"#{r.db_instance_class}\",\"#{r.engine}\",\"#{r.db_subnet_group.vpc_id}\"")
+        opfile.print("\n")
       end
       $rds_count+=1
     end
@@ -311,20 +353,25 @@ end
 def internet_gateways(region)
   verbose_or_debug_msg("Checking Internet gateways in region \"#{region}\" for profile \"#{$profile}\"")
   ec2 = Aws::EC2::Client.new(region: region, credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/igws","w")
+  else
+    opfile=$stdout
+  end
 
   result = ec2.describe_internet_gateways()
   result.internet_gateways.each do |gw|
     if not $quiet
-      print("\"#{$profile}\",\"Internet Gateway\",\"#{region}\",\"#{gw.internet_gateway_id}\"")
+      opfile.print("\"#{$profile}\",\"Internet Gateway\",\"#{region}\",\"#{gw.internet_gateway_id}\"")
       gw.attachments.each do |a|
-        print(",\"#{a.vpc_id}\"")
+        opfile.print(",\"#{a.vpc_id}\"")
       end
       if $print_tags
         gw.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-          print("\",\"#{tag.key}:#{tag.value}\"")
+          opfile.print("\",\"#{tag.key}:#{tag.value}\"")
         end
       end
-      print("\n")
+      opfile.print("\n")
     end
     $igw_count+=1
   end
@@ -334,12 +381,17 @@ end
 def nat_gateways(region)
   verbose_or_debug_msg("Checking NAT gateways in region \"#{region}\" for profile \"#{$profile}\"")
   ec2 = Aws::EC2::Client.new(region: region, credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/nat_gateways","w")
+  else
+    opfile=$stdout
+  end
 
   loop do 
     result = ec2.describe_nat_gateways()
     result.nat_gateways.each do |gw|
       if not $quiet
-        print "\"#{$profile}\",\"NAT Gateway\",\"#{region}\",\"#{gw.vpc_id}\",\"#{gw.nat_gateway_id}\",\"#{gw.subnet_id}\"\n"
+        opfile.print "\"#{$profile}\",\"NAT Gateway\",\"#{region}\",\"#{gw.vpc_id}\",\"#{gw.nat_gateway_id}\",\"#{gw.subnet_id}\"\n"
       end
       $gateway_count+=1
     end
@@ -352,11 +404,17 @@ end
 def eips(region)
   verbose_or_debug_msg("Checking Elastic IPs in region \"#{region}\" for profile \"#{$profile}\"")
   ec2 = Aws::EC2::Client.new(region: region, credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/eips","w")
+  else
+    opfile=$stdout
+  end
+
 
   result = ec2.describe_addresses()
   result.addresses.each do |add|
     if not $quiet
-      print "\"#{$profile}\",\"EIP\",\"#{region}\",\"#{add.public_ip}\",\"#{add.association_id or 'None'}\"\n"
+      opfile.print "\"#{$profile}\",\"EIP\",\"#{region}\",\"#{add.public_ip}\",\"#{add.association_id or 'None'}\"\n"
     end
     $eip_count+=1
   end
@@ -366,16 +424,22 @@ def load_balancers(region)
   verbose_or_debug_msg("Checking Load Balancers in region \"#{region}\" for profile \"#{$profile}\"")
   client = Aws::ElasticLoadBalancing::Client.new(region: region, credentials: $credentials)
   lbs=client.describe_load_balancers()
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/elbs","w")
+  else
+    opfile=$stdout
+  end
+
   lbs.load_balancer_descriptions.each do |lb_desc|
     if not $quiet
-      print "\"#{$profile}\",\"Load Balancer\",\"#{region}\",\"#{lb_desc.vpc_id}\",\"#{lb_desc.load_balancer_name}\",\"#{lb_desc.scheme}\""
+      opfile.print "\"#{$profile}\",\"Load Balancer\",\"#{region}\",\"#{lb_desc.vpc_id}\",\"#{lb_desc.load_balancer_name}\",\"#{lb_desc.scheme}\""
       # TODO:
       #if $print_tags
         #lb_desc.tags.each do |tag|
           #print("\",\"#{tag.key}:#{tag.value}\"")
         #end
       #end
-      print("\n")
+      opfile.print("\n")
     end
     $lb_count+=1
   end
@@ -387,12 +451,17 @@ end
 def s3_info()
   verbose_or_debug_msg("Checking S3 resources in all regions  for profile \"#{$profile}\"")
   s3_resource=Aws::S3::Resource.new(region: "eu-west-1", credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/all/s3_buckets","w")
+  else
+    opfile=$stdout
+  end
   
   # If we've not specified details, then simply list the buckets and return.
   if ! $s3_details
     s3_resource.buckets.each do |b|
       if not $quiet
-        print("\"#{$profile}\",\"S3 Bucket\",\"All\",\"#{b.name}\",\"#{b.creation_date}\"\n")
+        opfile.print("\"#{$profile}\",\"S3 Bucket\",\"All\",\"#{b.name}\",\"#{b.creation_date}\"\n")
       end
     $bucket_count+=1
     end
@@ -435,16 +504,21 @@ end
 def efs(region)
   verbose_or_debug_msg("Checking EFS resources in region #{region} for profile \"#{$profile}\"")
   efs = Aws::EFS::Client.new(region: region, credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/efs","w")
+  else
+    opfile=$stdout
+  end
   begin # EFS Not supported in all regions, so wrap in exception handling to deal with TCP connection failures
     efs.describe_file_systems.file_systems.each do |fs|
       if not $quiet
-        print("\"#{$profile}\",\"EFS\",\"#{region}\",\"#{fs.creation_token}\",\"#{fs.file_system_id}\",\"#{fs.size_in_bytes['value']}\"")
+        opfile.print("\"#{$profile}\",\"EFS\",\"#{region}\",\"#{fs.creation_token}\",\"#{fs.file_system_id}\",\"#{fs.size_in_bytes['value']}\"")
         if $print_tags
           fs.tags.sort_by { |hsh| hsh[:key] }.each do |tag|
-            print("\",\"#{tag.key}:#{tag.value}\"")
+            opfile.print("\",\"#{tag.key}:#{tag.value}\"")
           end
         end
-        print("\n")
+        opfile.print("\n")
       end 
       $efs_count+=1
     end
@@ -458,12 +532,17 @@ end
 # With elasticache we'll count clusters & cluster snapshots 
 def elasticache(region)
   verbose_or_debug_msg("Checking Elasticache resources in region #{region} for profile \"#{$profile}\"")
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/elasticaches","w")
+  else
+    opfile=$stdout
+  end
   begin
     elasticache = Aws::ElastiCache::Client.new(region: region, credentials: $credentials)
     clusters = elasticache.describe_cache_clusters()
     clusters.cache_clusters.each do |c|
       if not $quiet
-        print("\"Elasticache Cluster\",\"#{region}\",\"#{c.cache_cluster_id}\",\"#{c.cache_node_type}\",\"#{c.engine}\"\n")
+        opfile.print("\"Elasticache Cluster\",\"#{region}\",\"#{c.cache_cluster_id}\",\"#{c.cache_node_type}\",\"#{c.engine}\"\n")
       end
       $elasticache_count+=1
     end
@@ -471,7 +550,7 @@ def elasticache(region)
     snapshots.each do |ss|
       if not $quiet
         if ss.snapshots.length != 0
-          print("\"#{$profile}\",\"Elasticache snapshot\",\"#{ss}\"\n") 
+          opfile.print("\"#{$profile}\",\"Elasticache snapshot\",\"#{ss}\"\n") 
         end
       end
       $elasticache_snapshot_count+=1
@@ -495,18 +574,23 @@ end
 def redshift(region)
   verbose_or_debug_msg("Checking Redshift resources in region #{region} for profile \"#{$profile}\"")
   efs = Aws::Redshift::Client.new(region: region, credentials: $credentials)
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/redshift","w")
+  else
+    opfile=$stdout
+  end
+  begin # Redshift is not supported by all regions
     efs.describe_clusters.each do |cluster|
       cluster.clusters.each do |c|
         if not $quiet
           # using a multiline broken string to preserve indentation:
           string="\"#{$profile}\",\"#{region}\",\"Redshift Cluster\",\"#{c.cluster_identifier}\",\"#{c.cluster_status}\",\"#{c.node_type}\",\""\
           "\"#{c.number_of_nodes}\",\"#{c.vpc_id}\""
-          print string
+          opfile.print string
         end 
         $redshift_count+=1
       end
     end
-  begin # Redshift is not supported by all regions
   rescue => err
     # We ought to handle only the specific error of the region not having EFS, really.
     # print("Error in region #{region} #{err}\n")
@@ -519,6 +603,11 @@ def users()
   iam = Aws::IAM::Client.new( region: "eu-west-1", credentials: $credentials)
   users=Array.new
   marker=nil
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/all/users","w")
+  else
+    opfile=$stdout
+  end
   # Handle paginated results:
   begin
     loop do 
@@ -533,7 +622,7 @@ def users()
     users.each do |u|
       mfa=iam.list_mfa_devices(user_name: u.user_name)[0]
       if not $quiet
-        print("\"#{$profile}\",\"User\",\"None\",\"#{u.user_id}\",\"#{u.user_name}\",\"#{u.password_last_used}\",\"#{mfa[0] == nil ? 'no' : 'yes'}\"\n")
+        opfile.print("\"#{$profile}\",\"User\",\"None\",\"#{u.user_id}\",\"#{u.user_name}\",\"#{u.password_last_used}\",\"#{mfa[0] == nil ? 'no' : 'yes'}\"\n")
       end
       $user_count+=1
     end
@@ -558,20 +647,25 @@ def limits(region)
   sgs_per_if=0
   max_lbs=0
   max_listeners=0
+  if $audit_mode
+    opfile=File.open("#{$audit_dir}/#{region}/limits","w")
+  else
+    opfile=$stdout
+  end
 
-  print("\"#{$profile}\",\"Limits\",\"#{region}\"")
-  print(",\"EC2\"")
+  opfile.print("\"#{$profile}\",\"Limits\",\"#{region}\"")
+  opfile.print(",\"EC2\"")
   attributes.each do |a|
-    print(",\"#{a.attribute_name}:#{a.attribute_values[0].attribute_value}\"")
+    opfile.print(",\"#{a.attribute_name}:#{a.attribute_values[0].attribute_value}\"")
   end
 
   # ELB Limits:
-  print(",\"ELB\"")
+  opfile.print(",\"ELB\"")
   client=Aws::ElasticLoadBalancing::Client.new(region: region, credentials: $credentials)
   begin
     client.describe_account_limits.limits.each do |l|
       if l.name != "supported-platforms"
-        print(",\"#{l.name}:#{l[:max]}\"")
+        opfile.print(",\"#{l.name}:#{l[:max]}\"")
       end
     end
   rescue => err
@@ -580,25 +674,25 @@ def limits(region)
 
 
   # RDS Limits:
-  print(",\"RDS\"")
+  opfile.print(",\"RDS\"")
   client=Aws::RDS::Client.new(region: region, credentials: $credentials)
   rds_limits=client.describe_account_attributes()
   rds_limits.account_quotas.each do |l|
-    print(",\"#{l.account_quota_name}:#{l.max}\"")
+    opfile.print(",\"#{l.account_quota_name}:#{l.max}\"")
   end
 
   # Lambdas:
+  begin
     lambda = Aws::Lambda::Client.new(region: region, credentials: $credentials)
-    print(",\"LAMBDA\"")
+    opfile.print(",\"LAMBDA\"")
     resp=lambda.get_account_settings.account_limit
-    print ("\n*** #{resp} ***\n")
+    opfile.print ("\n*** #{resp} ***\n")
 
     resp.each do |l|
-      print(",\"#{l.account_limit}\"")
+      opfile.print(",\"#{l.account_limit}\"")
     end
-  begin
   rescue => err
-    print(",\"Not supported in region\"")
+    opfile.print(",\"Not supported in region\"")
   end
   # ELB Limits:
   client=Aws::ElasticLoadBalancing::Client.new(region: region, credentials: $credentials)
@@ -611,9 +705,8 @@ def limits(region)
         max_listeners=l[:max]
     end
   end
-  print("\"#{$profile}\",\"Limits\",\"#{region}\",\"#{max_inst}\",\"#{max_eips}\",\"#{sgs_per_if}\",\"#{max_lbs},\",\"#{max_listeners}\"\n")
-  print("\n")
-
+  opfile.print("\"#{$profile}\",\"Limits\",\"#{region}\",\"#{max_inst}\",\"#{max_eips}\",\"#{sgs_per_if}\",\"#{max_lbs},\",\"#{max_listeners}\"\n")
+  opfile.print("\n")
 end
 
 def get_account_id(region)
@@ -666,6 +759,7 @@ def process_command_line(argv)
   $s3_details=false
   $print_tags=false
   $pricing=false
+  $audit_mode=false
 
   if argv.include?('-d')
     $debug=true
@@ -678,7 +772,7 @@ def process_command_line(argv)
       when '-a', /\-?-all/
         $show_all=true
 
-      when /\-?-ami[s]?/
+      when /\-?-ami(s)?/
         $show_all=false
         $show_amis=true
 
@@ -815,7 +909,12 @@ def process_command_line(argv)
 
       when /\-?-nofail/
         $continue_on_permissions_error=true
-
+      when /\-?-audit([-_])?(output|mode)?/
+        $audit_mode=true
+        $quiet=false
+        time=Time.now
+        run_timestamp=sprintf("%4s%02d%02d%02d%02d%02d",time.year,time.month,time.day,time.hour,time.min,time.sec)
+      
       else
         print("Sorry I don't understand #{arg}")
         exit(E_USAGE)
@@ -831,6 +930,23 @@ def process_command_line(argv)
     err_msg("Sorry I can't find profile #{$profile} #{err}")
     exit(E_USAGE)
   end
+  if $audit_mode
+    begin
+      require 'fileutils'
+    rescue
+      err_msg "Fileutils not found - unable to run in audit mode"
+      exit(E_RUNTIME)
+    end
+
+    begin
+      $audit_dir=sprintf("%s/%s",$profile,run_timestamp)
+      FileUtils.mkdir_p($audit_dir)
+      debug_msg("Created output dir #{$audit_dir} for audit mode")
+    rescue
+      err_msg("Unable to create output dir #{$audit_dir} for audit mode")
+      exit(E_RUNTIME)
+    end
+  end 
 end
 
 # Use a call to Client.new to check that our credentials work
@@ -879,6 +995,18 @@ def main(argv)
   my_id=get_account_id($regions[0])
 
   $regions.each do |region|
+    if $audit_mode
+      begin
+        FileUtils.mkdir_p("#{$audit_dir}/#{region}")
+        debug_msg("created audit dir [#{$audit_dir}/#{region}]")
+      rescue
+        err_msg("Unable to create audit dir #{$audit_dir}/#{region} - exiting")
+        exit(E_RUNTIME)
+      end
+      FileUtils.mkdir_p("#{$audit_dir}/all")
+    end
+    
+
     debug_msg("Region=[#{region}]")
     vpcs(region)                if $show_all or $show_vpcs
 
