@@ -169,7 +169,7 @@ def ec2_instances(region)
         $running_i_count+=1 if i.state.name == "running"
         $stopped_i_count+=1 if i.state.name == "stopped"
         if not $quiet
-          opfile.print "\"#{$profile}\",\"Instance\",\"#{region}\",\"#{i.id}\",\"#{i.state.name}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\""
+          opfile.print("\"#{$profile}\",\"Instance\",\"#{region}\",\"#{i.id}\",\"#{i.state.name}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\",\"#{i.private_ip_address}\",\"#{i.public_ip_address}\"")
           if $pricing 
             if price_region == NIL or i.state.name == "stopped"
               opfile.print(",\"\"")
