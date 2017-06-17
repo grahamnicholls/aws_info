@@ -3,13 +3,14 @@
 # Uses the default profile in the ~/.aws/credentials file.
 # Graham Nicholls.  graham.nicholls@bjss.com 2017-04-11
 
-require 'aws-sdk'
-
 ABORTED=10
 E_USAGE=11
 E_AUTH_FAILURE=12
 E_PROFILE_ERR=13
 E_UNKNOWN_ERR=14
+E_RUNTIME_ERR=15
+E_MISSING_MODULE_ERR=16
+
 
 $regions=%w[ ap-south-1 eu-west-2 eu-west-1 ap-northeast-2 ap-northeast-1 sa-east-1 ca-central-1 ap-southeast-1 ap-southeast-2 eu-central-1 us-east-1 us-east-2 us-west-1 us-west-2 ]
 
@@ -806,8 +807,9 @@ def process_command_line(argv)
         # Only require the module if we're doing pricing - makes the program more portable
         begin
           require 'awscosts'
-        rescue =>err
-          err_msg "You need the aws costs library installed - in the meantime, try running without pricing info."
+        rescue LoadErr=>err
+          err_msg("You need the aws costs library installed - in the meantime, try running without pricing info.")
+          exit(E_MISSING_MODULE_ERR)
         end
         $pricing=true
 
@@ -935,7 +937,7 @@ def process_command_line(argv)
       require 'fileutils'
     rescue
       err_msg "Fileutils not found - unable to run in audit mode"
-      exit(E_RUNTIME)
+      exit(E_RUNTIME_ERR)
     end
 
     begin
@@ -944,7 +946,7 @@ def process_command_line(argv)
       debug_msg("Created output dir #{$audit_dir} for audit mode")
     rescue
       err_msg("Unable to create output dir #{$audit_dir} for audit mode")
-      exit(E_RUNTIME)
+      exit(E_RUNTIME_ERR)
     end
   end 
 end
@@ -1001,7 +1003,7 @@ def main(argv)
         debug_msg("created audit dir [#{$audit_dir}/#{region}]")
       rescue
         err_msg("Unable to create audit dir #{$audit_dir}/#{region} - exiting")
-        exit(E_RUNTIME)
+        exit(E_RUNTIME_ERR)
       end
       FileUtils.mkdir_p("#{$audit_dir}/all")
     end
@@ -1034,6 +1036,13 @@ def main(argv)
   users()          if $show_all or $show_users
 
   display_totals if $summarize
+end
+
+begin
+  require 'aws-sdk'
+rescue LoadError => err
+  err_msg("Sorry, you need the aws-sdk library to run this program\n")
+  exit(E_MISSING_MODULE_ERR)
 end
 
 begin
