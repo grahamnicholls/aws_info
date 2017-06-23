@@ -687,13 +687,10 @@ def limits(region)
     lambda = Aws::Lambda::Client.new(region: region, credentials: $credentials)
     opfile.print(",\"LAMBDA\"")
     resp=lambda.get_account_settings.account_limit
-    opfile.print ("\n*** #{resp} ***\n")
-
-    resp.each do |l|
-      opfile.print(",\"#{l.account_limit}\"")
-    end
+    opfile.print(",\"total_code_size:#{resp.total_code_size}\",\"Concurrent_executions:#{resp.concurrent_executions}\",")
+    opfile.print("\"function_count:#{resp.function_count}\"")
   rescue => err
-    opfile.print(",\"Not supported in region\"")
+    opfile.print(",\"Lambda not supported in region #{region}\"")
   end
   # ELB Limits:
   client=Aws::ElasticLoadBalancing::Client.new(region: region, credentials: $credentials)
