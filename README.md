@@ -114,7 +114,7 @@ $ aws_info -pprod_account -audit
 aws_info --subnets --region eu-west-1 would list all subnets in the region.  This could be piped to a 
 Unix command-line to produce something like this:
 
-$ aws_info --region eu-west-1 --subnets | awk -F'\"*,\"*' '{gsub("\."," ",$7); print $7}' | sort -k1n -k2n -k3n | tr ' ' '.'
+`$ aws_info --region eu-west-1 --subnets | awk -F'\"*,\"*' '{gsub("\."," ",$7); print $7}' | sort -k1n -k2n -k3n | tr ' ' '.'
 10.10.53.0/24
 10.10.71.0/24
 10.10.72.0/24
@@ -124,6 +124,7 @@ $ aws_info --region eu-west-1 --subnets | awk -F'\"*,\"*' '{gsub("\."," ",$7); p
 10.10.83.0/24
 10.10.91.0/24
 ...
+`
 
 ####To get an idea of monthly running cost for all ec2 instances:
 
