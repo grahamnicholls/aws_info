@@ -76,37 +76,37 @@ $ tree
 │       │   ├── efs
 │       │   ├── eips
 │       │   ├── elasticaches
-│       │   ├── elbs
-│       │   ├── igws
-│       │   ├── instances
-│       │   ├── keys
-│       │   ├── limits
-│       │   ├── nacls
-│       │   ├── nat_gateways
-│       │   ├── rds_instances
-│       │   ├── redshift
-│       │   ├── route_tables
-│       │   ├── security_groups
-│       │   ├── snapshots
-│       │   ├── subnets
-│       │   ├── volumes
-│       │   └── vpcs
-│       ├── ap-northeast-2/
-│       │   ├── amis
-│       │   ├── efs
-│       │   ├── eips
-│       │   ├── elasticaches
-│       │   ├── elbs
-│       │   ├── igws
-│       │   ├── instances
-│       │   ├── keys
-│       │   ├── limits
-│       │   ├── nacls
-│       │   ├── nat_gateways
-│       │   ├── rds_instances
-│       │   ├── redshift
-│       │   ├── route_tables
-
+>│       │   ├── elbs
+>│       │   ├── igws
+>│       │   ├── instances
+>│       │   ├── keys
+>│       │   ├── limits
+>│       │   ├── nacls
+>│       │   ├── nat_gateways
+>│       │   ├── rds_instances
+>│       │   ├── redshift
+>│       │   ├── route_tables
+>│       │   ├── security_groups
+>│       │   ├── snapshots
+>│       │   ├── subnets
+>│       │   ├── volumes
+>│       │   └── vpcs
+>│       ├── ap-northeast-2/
+>│       │   ├── amis
+>│       │   ├── efs
+>│       │   ├── eips
+>│       │   ├── elasticaches
+>│       │   ├── elbs
+>│       │   ├── igws
+>│       │   ├── instances
+>│       │   ├── keys
+>│       │   ├── limits
+>│       │   ├── nacls
+>│       │   ├── nat_gateways
+>│       │   ├── rds_instances
+>│       │   ├── redshift
+>│       │   ├── route_tables
+>
 ... 
 
 ####Suppose you are planning a new subnet and wish to see which ones are already in use in the eu-west-1 region?
