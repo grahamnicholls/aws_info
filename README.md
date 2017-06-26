@@ -65,7 +65,8 @@ eg:
 
 $ aws_info -pprod_account -audit
 [_long_ wait]  <- it's iterating over each region for each asset type
-`$ tree
+~~~~
+$ tree
 ├── default/
 │   └── 20170626091308/
 │       ├── all/
@@ -106,7 +107,7 @@ $ aws_info -pprod_account -audit
 │       │   ├── rds_instances
 │       │   ├── redshift
 │       │   ├── route_tables
-`
+~~~~
 ... 
 
 ####Suppose you are planning a new subnet and wish to see which ones are already in use in the eu-west-1 region?
@@ -114,7 +115,8 @@ $ aws_info -pprod_account -audit
 aws_info --subnets --region eu-west-1 would list all subnets in the region.  This could be piped to a 
 Unix command-line to produce something like this:
 
-`$ aws_info --region eu-west-1 --subnets | awk -F'\"*,\"*' '{gsub("\."," ",$7); print $7}' | sort -k1n -k2n -k3n | tr ' ' '.'
+~~~~
+$ aws_info --region eu-west-1 --subnets | awk -F'\"*,\"*' '{gsub("\."," ",$7); print $7}' | sort -k1n -k2n -k3n | tr ' ' '.'
 10.10.53.0/24
 10.10.71.0/24
 10.10.72.0/24
@@ -124,7 +126,8 @@ Unix command-line to produce something like this:
 10.10.83.0/24
 10.10.91.0/24
 ...
-`
+~~~~
+
 
 ####To get an idea of monthly running cost for all ec2 instances:
 
