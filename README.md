@@ -54,6 +54,61 @@ specifying --region [region_name], the search is restricted to that region.
 
 ## Examples of Usage:
 
+####Want to generate a _fairly_ complete list of assets in your account?
+
+aws_info -p[account_name] -audit
+
+Which will create a directory in the current directory, with the name of the profile [account_name], and under
+that a timestamped directory (so you could keep an audit over time), and in there, a directory for each region, as well
+as one for "all", for assets which are global.  Within each directory, a file will be created for each asset type.
+eg:
+
+$ aws_info -pprod_account -audit
+[_long_ wait]  <- it's iterating over each region for each asset type
+$ tree
+├── default/
+│   └── 20170626091308/
+│       ├── all/
+│       │   ├── s3_buckets
+│       │   └── users
+│       ├── ap-northeast-1/
+│       │   ├── amis
+│       │   ├── efs
+│       │   ├── eips
+│       │   ├── elasticaches
+│       │   ├── elbs
+│       │   ├── igws
+│       │   ├── instances
+│       │   ├── keys
+│       │   ├── limits
+│       │   ├── nacls
+│       │   ├── nat_gateways
+│       │   ├── rds_instances
+│       │   ├── redshift
+│       │   ├── route_tables
+│       │   ├── security_groups
+│       │   ├── snapshots
+│       │   ├── subnets
+│       │   ├── volumes
+│       │   └── vpcs
+│       ├── ap-northeast-2/
+│       │   ├── amis
+│       │   ├── efs
+│       │   ├── eips
+│       │   ├── elasticaches
+│       │   ├── elbs
+│       │   ├── igws
+│       │   ├── instances
+│       │   ├── keys
+│       │   ├── limits
+│       │   ├── nacls
+│       │   ├── nat_gateways
+│       │   ├── rds_instances
+│       │   ├── redshift
+│       │   ├── route_tables
+
+... 
+
 ####Suppose you are planning a new subnet and wish to see which ones are already in use in the eu-west-1 region?
 
 aws_info --subnets --region eu-west-1 would list all subnets in the region.  This could be piped to a 
