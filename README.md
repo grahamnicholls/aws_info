@@ -22,7 +22,7 @@ asset.
 
 ##What AWS assets can aws_info describe?
 
-This table shows the command-line option, and what it will cause to be listed:
+This shows each command-line option, and what it will cause to be listed:
 * -a              : all assets (the default, anyway, so this is superfluous)
 * -ami            : AMIs
 * -instances      : EC2 Instances (stopped & running)
@@ -224,6 +224,8 @@ CLI tools, but
 
 ##Bugs
 Yep.  There's bug included.  For free. Fork 'em.
+For instance, the region-list is hardcoded - which is awful, and ironic, considering that the whole crux of the thing is programmatic access.  Feel free to fix this, as well as allowing the --region= option to take a comma-separated list of regions.
+
 
 ##Style
 Too many globals.  I'd like to tidy up the code - I got started thinking I'd just list instances, but found the
