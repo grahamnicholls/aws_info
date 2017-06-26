@@ -47,6 +47,7 @@ This shows each command-line option, and what it will cause to be listed:
 * -limits         : Attempts to get limits for each region
 
 ##Extra opions
+
 If -t is given on the command-line, tags are added after the basic info about each taggable asset.  Note, that
 this is always after the basic info, so that the field-order is preserved.
 The --price option adds pricing info where useful - principally in the case of EC2 Instances.
