@@ -23,27 +23,27 @@ asset.
 ##What AWS assets can aws_info describe?
 
 This table shows the command-line option, and what it will cause to be listed:
--a              : all assets
--ami            : AMIs
--instances      : EC2 Instances (stopped & running)
--igw            : Internet Gateways
--lb             : loadbalancers
--nats           : NAT gateways
--nacl           : NACLs
--route          : Route Tables
--rds            : RDS Clusters/Instances
--key            : Key Pairs
--subnet         : Subnets
--snapshots      : Snapshots
--s3             : S3 Buckets
--volumes        : Volumes
--eip            : Elastic IPs
--efs            : Elastic Filesystems
--vpcs           : VPCs
--security       : Security Groups
--redshift       : Redshift Clusters
--elasticache    : Elasticache nodes
--users          : IAM Users
+* -a              : all assets
+* -ami            : AMIs
+* -instances      : EC2 Instances (stopped & running)
+* -igw            : Internet Gateways
+* -lb             : loadbalancers
+* -nats           : NAT gateways
+* -nacl           : NACLs
+* -route          : Route Tables
+* -rds            : RDS Clusters/Instances
+* -key            : Key Pairs
+* -subnet         : Subnets
+* -snapshots      : Snapshots
+* -s3             : S3 Buckets
+* -volumes        : Volumes
+* -eip            : Elastic IPs
+* -efs            : Elastic Filesystems
+* -vpcs           : VPCs
+* -security       : Security Groups
+* -redshift       : Redshift Clusters
+* -elasticache    : Elasticache nodes
+* -users          : IAM Users
 
 ##Extra opions
 If -t is given on the command-line, tags are added after the basic info about each taggable asset.  Note, that
