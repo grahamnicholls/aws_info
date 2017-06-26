@@ -23,7 +23,7 @@ asset.
 ##What AWS assets can aws_info describe?
 
 This table shows the command-line option, and what it will cause to be listed:
-* -a              : all assets
+* -a              : all assets (the default, anyway, so this is superfluous)
 * -ami            : AMIs
 * -instances      : EC2 Instances (stopped & running)
 * -igw            : Internet Gateways
@@ -44,6 +44,7 @@ This table shows the command-line option, and what it will cause to be listed:
 * -redshift       : Redshift Clusters
 * -elasticache    : Elasticache nodes
 * -users          : IAM Users
+* -limits         : Attempts to get limits for each region
 
 ##Extra opions
 If -t is given on the command-line, tags are added after the basic info about each taggable asset.  Note, that
@@ -51,6 +52,8 @@ this is always after the basic info, so that the field-order is preserved.
 The --price option adds pricing info where useful - principally in the case of EC2 Instances.
 By default, assets are shown from all regions (Which appallingly is a hard-coded array of region names).  By
 specifying --region [region_name], the search is restricted to that region.
+Some actions will fail with insufficient permissions.  The default behaviour in that case is to exit; this can be overridden
+by specifying -nofail.
 
 ## Examples of Usage:
 
