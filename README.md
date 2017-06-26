@@ -1,5 +1,5 @@
 # aws_info
-ruby version of the aws cli uses awscosts gem to get costing.   
+Get information in CSV format about any or all assets held by an AWS account, across all regions.
 
 aws_info essentially duplicates the functions available from the 
 aws cli, but with a couple of caveats:
