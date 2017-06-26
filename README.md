@@ -56,14 +56,18 @@ specifying --region [region_name], the search is restricted to that region.
 
 ####Want to generate a _fairly_ complete list of assets in your account?
 
+~~~~
 aws_info -p[account_name] -audit
+~~~~
 
 Which will create a directory in the current directory, with the name of the profile [account_name], and under
 that a timestamped directory (so you could keep an audit over time), and in there, a directory for each region, as well
 as one for "all", for assets which are global.  Within each directory, a file will be created for each asset type.
 eg:
 
+~~~~
 $ aws_info -pprod_account -audit
+~~~~
 [_long_ wait]  <- it's iterating over each region for each asset type
 ~~~~
 $ tree
@@ -131,12 +135,15 @@ $ aws_info --region eu-west-1 --subnets | awk -F'\"*,\"*' '{gsub("\."," ",$7); p
 
 ####To get an idea of monthly running cost for all ec2 instances:
 
+~~~~
 $ aws_info -i -price
+~~~~
 
 Would list the instances (both running and stopped) with their hourly price cost.  For a stopped instance, the script sets
 an hourly cost of $0.00. 
 
-aws_info -price -i 
+~~~~
+$ aws_info -price -i 
 "default","Instance","eu-west-1","i-0f8bfc2de054a2b8a","running","c4.large","ami-db9ae0a8","vpc-27a7e143","0.113"
 "default","Instance","eu-west-1","i-0e06755088fbc42b0","running","t2.medium","ami-6ac41b19","vpc-0f0e316a","0.05"
 "default","Instance","eu-west-1","i-0a4dace8b125b5f77","running","t2.medium","ami-6ac41b19","vpc-1839007d","0.05"
@@ -145,10 +152,12 @@ aws_info -price -i
 "default","Instance","eu-west-1","i-0d5d983ea9d592c38","running","t2.medium","ami-3e131058","vpc-ef2cd388","0.05"
 "default","Instance","eu-west-1","i-0528bbfe65996c5ed","running","t2.medium","ami-6ac41b19","vpc-a50e31c0","0.05"
 "default","Instance","eu-west-1","i-77638d46","running","t2.nano","ami-bb5ec5c8","vpc-693a460c","0.0063
+~~~~
 
 It's then simple to pipe this to an awk script (there are approx 780 hours in a month):
 
-aws_info -pan_account -i  -price | awk -F'\"*,\"*' '{costs[$6]+=$9;count[$6]+=1 ; tot=tot+$9; inst_count+=1} END { for (size in costs) { printf("%-17s %3d %9.1f\n",size,count[size],costs[size]*780)} ; printf("%-17s %3d %9.1f\n","Totals:",inst_count, tot*780) }'
+~~~~
+$ aws_info -pan_account -i  -price | awk -F'\"*,\"*' '{costs[$6]+=$9;count[$6]+=1 ; tot=tot+$9; inst_count+=1} END { for (size in costs) { printf("%-17s %3d %9.1f\n",size,count[size],costs[size]*780)} ; printf("%-17s %3d %9.1f\n","Totals:",inst_count, tot*780) }'
 
 c4.2xlarge         44   14486.9
 t2.small            1      19.5
@@ -166,27 +175,33 @@ t2.micro           88     892.3
 m4.2xlarge         11    3809.5
 m3.medium          42    2391.5
 Totals:           476   56121.8
+~~~~
 
 
 #### Listing all users without MFA enabled
-aws_info --users | awk -F'\"*,\"*' '$NF ~ /no/ {print $5}'
+~~~~
+$ aws_info --users | awk -F'\"*,\"*' '$NF ~ /no/ {print $5}'
 r.walker@XXX.com
 pamelap
 rob.jones@xxx.com
 ...
+~~~~
 
 #### List all assets tagged with a particular string
-aws_info -t | grep "_SOME-STRING_"
+~~~~
+$ aws_info -t | grep "_SOME-STRING_"
+~~~~
 -eg:
 
+~~~~
 $ aws_info -t | egrep -i "env(ironment)?:pro?d"
-...
 "default","Security Group","eu-west-1","sg-fc268285","vpc-eb09b38e","prd-project2-PRI-frontend-blue-SG"","Application:project2"","Environment:prd"","Name:prd-project2-PRI-frontend-blue-SG"","Role:frontend-blue"","Tier:PRI"
 "default","Security Group","eu-west-1","sg-ffed7f9b","vpc-774f2a12","Define access to API PRD nodes"","environment:prd-projecth"","project:projecth"
 "default","NACL","eu-west-1","acl-5108a235","vpc-37f2e652","false","1","Name:tableau-acl-prd-tableau_google_api","component:tableau","environment:prd-tableau","project:project2-tableau"
 "default","NACL","eu-west-1","acl-d837c7bc","vpc-37f2e652","false","3","Name:tableau-acl-rds-prd-tableau","component:tableau","environment:prd-tableau","project:project2-tableau"
 "default","NACL","eu-west-1","acl-5008a234","vpc-37f2e652","false","1","Name:tableau-acl-prd-tableau","component:tableau","environment:prd-tableau","project:project2-tableau"
 ...
+~~~~
 
 
 ## Pricing
