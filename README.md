@@ -49,10 +49,10 @@ This shows each command-line option, and what it will cause to be listed:
 ##Extra opions
 
 If -t is given on the command-line, tags are added after the basic info about each taggable asset.  Note, that
-this is always after the basic info, so that the field-order is preserved.
-The --price option adds pricing info where useful - principally in the case of EC2 Instances.
+this is always after the basic info, so that the field-order is preserved.  
+The --price option adds pricing info where useful - principally in the case of EC2 Instances.  
 By default, assets are shown from all regions (Which appallingly is a hard-coded array of region names).  By
-specifying --region [region_name], the search is restricted to that region.
+specifying --region [region_name], the search is restricted to that region.  
 Some actions will fail with insufficient permissions.  The default behaviour in that case is to exit; this can be overridden
 by specifying -nofail.
 
