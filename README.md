@@ -71,7 +71,7 @@ $ aws_info -pprod_account -audit
 [_long_ wait]  <- it's iterating over each region for each asset type
 ~~~~
 $ tree
-├── default/
+├── prod_account/
 │   └── 20170626091308/
 │       ├── all/
 │       │   ├── s3_buckets
