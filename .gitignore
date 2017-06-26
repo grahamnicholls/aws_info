@@ -5,8 +5,11 @@ tmp
 tags
 *secrets
 *rsa
+*dsa
 credentials
 ctags
+
+
 
 ### Terraform ###
 # Compiled files
