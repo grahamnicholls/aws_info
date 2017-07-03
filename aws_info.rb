@@ -841,6 +841,9 @@ def process_command_line(argv)
         $show_all=false
         $show_keys=true
 
+      when /\-?-region=(.*)/
+        $regions=arg.match(/\-?-region=(.*)/).captures
+
       when /\-?-region/
         $regions=[ argv.pop() ]
 
