@@ -851,6 +851,9 @@ def process_command_line(argv)
         print("Not yet implemented\n")
         exit(1)
 
+      when /\-?-x/, /--exclude/
+        $regions.delete(argv.pop())
+
       when /\-?-subnet[s]?/
         $show_all=false
         $show_subnets=true
