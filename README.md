@@ -55,6 +55,10 @@ By default, assets are shown from all regions (Which appallingly is a hard-coded
 specifying --region [region_name], the search is restricted to that region.  
 Some actions will fail with insufficient permissions.  The default behaviour in that case is to exit; this can be overridden
 by specifying -nofail.
+Usefully, the -x[region] option can be repeated as often as necessary to remove each region from the search, so
+adding -xeu-west-1 -x eu-west-2 -x eu-central-1 would exclude all of the european regions from being queried (as below).
+
+
 
 ## Examples of Usage:
 
@@ -179,6 +183,11 @@ t2.micro           88     892.3
 m4.2xlarge         11    3809.5
 m3.medium          42    2391.5
 Totals:           476   56121.8
+~~~~
+
+Show assets in all except the european regions:
+~~~~
+$ aws_info -prock -xeu-west-1 -x eu-west-2 -x eu-central-1
 ~~~~
 
 
