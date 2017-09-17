@@ -61,7 +61,8 @@ def main(args)
   end
   debug_msg("Analysing all .json files below starting dir \"#{start_dir}\"")
 
-  load_logs(start_dir)
+  log_records=load_logs(start_dir)
+  print_logs(log_records)
     
 end
 
@@ -73,6 +74,10 @@ def load_logs(start_dir)
       load_records_from_json_file(path,records)
     end
   end
+  return records
+end
+
+def print_logs(records)
   records.each do | record|
     ev_name=record['eventName']
     ev_username=record['userIdentity']['userName']
@@ -80,13 +85,12 @@ def load_logs(start_dir)
     ev_type=record['eventType']
     ev_region=record['awsRegion']
     printf("%-12s %-20.20s %-30s %-20s\n", ev_region, (ev_username == nil ? "No username" : ev_username), ev_name, ev_time)
-    
   end
 end
 
 def load_records_from_json_file(file_path,record_list)
-  infile=File.read(file_path)
-  data=JSON.parse(infile);
+  file_data=File.read(file_path)
+  data=JSON.parse(file_data);
   data['Records'].each do |record|
     record_list << record
   end
