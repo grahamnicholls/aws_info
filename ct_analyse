@@ -1,0 +1,95 @@
+#!/usr/bin/env ruby
+
+require 'json'
+require 'find'
+
+E_NOT_DIR=10
+
+$version="1.02"
+$progname=File.basename( $PROGRAM_NAME )
+$debug=false
+$verbose=false
+$keep_logs=false # if true, save a file of concatenated records
+
+def verbose_msg(msg)
+  if $opts.verbose
+    printf("#{msg}\n")
+  end
+end
+
+def debug_msg(msg)
+  if $debug
+    printf("DEBUG: #{msg}\n")
+  end
+end
+
+def usage()
+  print("Usage #{$progname} [ -s startdir ]")
+end
+
+if ( ARGV.length == 0 )
+  print "Usage: #{$progname}: -d -q -v [startdir 1] ... [startdir N]\n"
+  exit(1)
+end
+
+def main(args)
+  if args.include?('-d')
+    $debug=true
+    args.delete('-d')
+  end
+
+  if args.include?('-v')
+    $verbose=true
+    args.delete('-v')
+  end
+
+  args.reverse!
+  until args.empty? do
+    arg=args.pop
+    debug_msg ("Arg=#{arg}\n")
+    case arg
+      when '-s'
+        start_dir=args.pop
+      when '-k'
+        $keep_logs=true
+    else
+      warn("Ignoring arg [#{arg}]")
+    end
+  end
+  if start_dir==nil then
+    start_dir="."
+  end
+  debug_msg("Analysing all .json files below starting dir \"#{start_dir}\"")
+
+  load_logs(start_dir)
+    
+end
+
+def load_logs(start_dir)
+  records=Array.new
+  Find.find(start_dir) do | path|
+    if path.match("json$")
+      debug_msg("Parsing file #{path}")
+      load_records_from_json_file(path,records)
+    end
+  end
+  records.each do | record|
+    ev_name=record['eventName']
+    ev_username=record['userIdentity']['userName']
+    ev_time=record['eventTime']
+    ev_type=record['eventType']
+    ev_region=record['awsRegion']
+    printf("%-12s %-20.20s %-30s %-20s\n", ev_region, (ev_username == nil ? "No username" : ev_username), ev_name, ev_time)
+    
+  end
+end
+
+def load_records_from_json_file(file_path,record_list)
+  infile=File.read(file_path)
+  data=JSON.parse(infile);
+  data['Records'].each do |record|
+    record_list << record
+  end
+end
+
+main(ARGV)
