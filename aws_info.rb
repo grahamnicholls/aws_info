@@ -782,7 +782,7 @@ def process_command_line(argv)
         $show_all=false
         $show_limits=true
 
-      when '-i', /\-?-instances/
+      when '-i', /\-?-instance[s]?/
         debug_msg("showing instances")
         $show_all=false
         $show_instances=true
