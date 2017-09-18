@@ -12,24 +12,19 @@ $verbose=false
 $keep_logs=false # if true, save a file of concatenated records
 
 def verbose_msg(msg)
-  if $opts.verbose
-    printf("#{msg}\n")
+  if $verbose
+    $stderr.puts("#{msg}\n")
   end
 end
 
 def debug_msg(msg)
   if $debug
-    printf("DEBUG: #{msg}\n")
+    $stderr.puts("DEBUG: #{msg}\n")
   end
 end
 
 def usage()
-  print("Usage #{$progname} [ -s startdir ]")
-end
-
-if ( ARGV.length == 0 )
-  print "Usage: #{$progname}: -d -q -v [startdir 1] ... [startdir N]\n"
-  exit(1)
+  print("Usage #{$progname} { -s startdir }")
 end
 
 def main(args)
@@ -61,39 +56,41 @@ def main(args)
   end
   debug_msg("Analysing all .json files below starting dir \"#{start_dir}\"")
 
-  log_records=load_logs(start_dir)
-  print_logs(log_records)
+  load_logs(start_dir)
     
 end
 
 def load_logs(start_dir)
+  record_count=0
+  file_count=0
   records=Array.new
   Find.find(start_dir) do | path|
     if path.match("json$")
-      debug_msg("Parsing file #{path}")
-      load_records_from_json_file(path,records)
+      file_count+=1
+      record_count+=load_records_from_json_file(path,records)
     end
   end
-  return records
-end
-
-def print_logs(records)
-  records.each do | record|
-    ev_name=record['eventName']
-    ev_username=record['userIdentity']['userName']
-    ev_time=record['eventTime']
-    ev_type=record['eventType']
-    ev_region=record['awsRegion']
-    printf("%-12s %-20.20s %-30s %-20s\n", ev_region, (ev_username == nil ? "No username" : ev_username), ev_name, ev_time)
-  end
+  debug_msg("#{record_count} records loaded from #{file_count} files")
+  verbose_msg("#{record_count} records loaded from #{file_count} files")
 end
 
 def load_records_from_json_file(file_path,record_list)
   file_data=File.read(file_path)
   data=JSON.parse(file_data);
   data['Records'].each do |record|
-    record_list << record
+    ev_name=record['eventName']
+    ev_username=record['userIdentity']['userName']
+    ev_id_type=record['userIdentity']['type']
+    ev_time=record['eventTime']
+    ev_username=record['userIdentity']['userName']
+    ev_type=record['eventType']
+    ev_region=record['awsRegion']
+    ev_source=record['eventSource']
+    printf("%s %s %s/%s %s %s %s\n",\
+           ev_type, ev_region, ev_id_type,(ev_username == nil ? "not_applicable" : ev_username), ev_name, ev_source, ev_time)
   end
+  debug_msg("Parsing file #{file_path} - #{data['Records'].length} records in #{file_data.length} lines." )
+  return data['Records'].length
 end
 
 main(ARGV)
