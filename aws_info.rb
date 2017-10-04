@@ -173,7 +173,7 @@ def ec2_instances(region)
           opfile.print("\"#{$profile}\",\"Instance\",\"#{region}\",\"#{i.id}\",\"#{i.state.name}\",\"#{i.instance_type}\",\"#{i.image_id}\",\"#{i.vpc_id}\",\"#{i.private_ip_address}\",\"#{i.public_ip_address}\"")
           if $pricing 
             if price_region == NIL or i.state.name == "stopped"
-              opfile.print(",\"\"")
+              opfile.print(",\"0.00\"")
             else
               opfile.print(",\"#{prices[i.instance_type]}\"")
             end
@@ -782,7 +782,7 @@ def process_command_line(argv)
         $show_all=false
         $show_limits=true
 
-      when '-i', /\-?-instance[s]?/
+      when '-i', /\-?-instances/
         debug_msg("showing instances")
         $show_all=false
         $show_instances=true
@@ -830,34 +830,26 @@ def process_command_line(argv)
         $show_all=false
         $show_routes=true
 
-      when '-r', /\-?-rds$/
+      when '-r', /\-?-rds/
         $show_all=false
         $show_rds=true
 
-      when '-t', /\-?-tags?$/
+      when '-t', /\-?-tags?/
         $print_tags=true
 
-      when /\-?-key[s]?$/
+      when /\-?-key[s]?/
         $show_all=false
         $show_keys=true
 
       when /\-?-region=(.*)/
         $regions=arg.match(/\-?-region=(.*)/).captures
 
-      when /\-?-region$/
+      when /\-?-region/
         $regions=[ argv.pop() ]
 
       when /\-?-regions=/
         print("Not yet implemented\n")
         exit(1)
-
-      when /\-?-x$/, /\-?-exclude$/
-        exclude_region=argv.pop()
-        $regions -= [ exclude_region ]
-
-      when /\-?-x.*/
-        exclude_region=arg.match(/\-?-x(.*)/).captures
-        $regions -= exclude_region
 
       when /\-?-subnet[s]?/
         $show_all=false
@@ -997,7 +989,7 @@ def main(argv)
   $nacl_count=0
   $route_table_count=0
 
-  $version="1.03"
+  $version="1.02"
   $progname=File.basename( $PROGRAM_NAME )
 
   process_command_line(argv)
