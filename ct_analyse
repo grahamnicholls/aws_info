@@ -2,6 +2,8 @@
 
 require 'json'
 require 'find'
+require 'fileutils'
+require 'open3'
 
 E_NOT_DIR=10
 
@@ -60,22 +62,35 @@ def main(args)
     
 end
 
+# Amazon delivers CT logs as gzipped json files, so only work with those:
 def load_logs(start_dir)
   record_count=0
   file_count=0
   records=Array.new
   Find.find(start_dir) do | path|
-    if path.match("json$")
-      file_count+=1
-      record_count+=load_records_from_json_file(path,records)
+    if path.match(".json.gz$")
+      if ! is_already_loaded(path)
+        debug_msg("Loading data from file #{path}")
+        file_count+=1
+        record_count+=load_records_from_json_file(path,records)
+        FileUtils.touch("#{path}.loaded")
+      end
     end
   end
   debug_msg("#{record_count} records loaded from #{file_count} files")
   verbose_msg("#{record_count} records loaded from #{file_count} files")
 end
 
+def is_already_loaded(file_path)
+  if File.exist?("#{file_path}.loaded")
+    debug_msg("File #{file_path} has already been loaded ; skipping")
+    return(true)
+  end
+  return(false)
+end
+
 def load_records_from_json_file(file_path,record_list)
-  file_data=File.read(file_path)
+  file_data,stderr,status=Open3.capture3("/bin/zcat #{file_path}")
   data=JSON.parse(file_data);
   data['Records'].each do |record|
     ev_name=record['eventName']
@@ -85,9 +100,10 @@ def load_records_from_json_file(file_path,record_list)
     ev_username=record['userIdentity']['userName']
     ev_type=record['eventType']
     ev_region=record['awsRegion']
+    ev_error=record['errorCode']       
     ev_source=record['eventSource']
-    printf("%s %s %s/%s %s %s %s\n",\
-           ev_type, ev_region, ev_id_type,(ev_username == nil ? "not_applicable" : ev_username), ev_name, ev_source, ev_time)
+    printf("\"%s\",\"%s\",\"%s/%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",\
+           ev_type, ev_region, ev_id_type,(ev_username == nil ? "not_applicable" : ev_username), ev_name, ev_source, ev_time,(ev_error == nil ? "" : ev_error))
   end
   debug_msg("Parsing file #{file_path} - #{data['Records'].length} records in #{file_data.length} lines." )
   return data['Records'].length
