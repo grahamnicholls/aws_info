@@ -1,0 +1,98 @@
+#!/bin/bash
+# script to sync from an s3 bucket to a local directory.
+# NOTE: Don't unzip the files, or the sync will re-copy everything each time!
+
+
+TRUE=0
+FALSE=1
+OK=$TRUE
+
+E_USAGE=10
+E_RUNTIME=11
+E_BUCKET_ERR=12
+
+target_dir=""
+profile_name=""
+bucket_name=""
+execute_flag=$FALSE
+
+verbose_flag=$FALSE
+debug_flag=$FALSE
+progname=$(basename $0)
+
+debug() { return $debug_flag ; }
+verbose() { return $verbose_flag ; }
+verbose_msg() { if verbose ; then echo "$*" ; fi; }
+debug_msg() { if debug ; then echo "DEBUG $*" ; fi ; } >&2
+error_msg() { echo "ERROR: $*" ; } >&2
+execute() { return $execute_flag ; }
+
+
+usage()
+{
+  if [[ ! -z $1 ]] ; then
+    echo $*
+  fi
+  echo "Usage: $progname -pprofile -ttarget_dir -bbucket_name {-v -d }"
+}
+
+check_bucket()
+{
+  aws --profile $profile_name s3 ls s3://$bucket_name >/dev/null 2>&1
+}
+
+sync()
+{
+  if execute ; then
+    if debug ; then set -x ; fi 
+    aws --profile $profile_name s3 sync s3://$bucket_name $target_dir
+    set +x
+  else
+    echo "Not executing: \"aws --profile $profile_name s3 sync s3://$bucket_name $target_dir\""
+  fi
+}
+
+main()
+{
+  while [[ $# -gt 0 ]] ; do
+    case $1 in
+      -b)  shift ; bucket_name=$1 ;;
+      -b*) bucket_name=$(echo $1 | cut -c3-) ;;
+      -d)  debug_flag=$TRUE;;
+      -t)  shift ; target_dir=$1 ;;
+      -t*) target_dir=$(echo $1 | cut -c3-) ;;
+      -v)  verbose=$TRUE ;;
+      -p)  shift ; profile_name=$1 ;;
+      -p*) profile_name=$(echo $1 | cut -c3-) ;;
+      -x)  execute_flag=$TRUE ;;
+
+       *)  usage "Sorry I dont understand $1" ; exit $E_USAGE ;;
+    esac
+    shift
+  done
+  if [[ -z $profile_name ]] ; then
+    usage "You must give a profile name (which has credentials configured)"
+    exit $E_USAGE
+  fi
+
+  if [[ -z $target_dir ]] ; then
+    usage "You must give a (local) target directory to store the files"
+    exit $E_USAGE
+  fi
+
+  debug_msg "Syncing from $bucket_name to local dir $target_dir using profile $profile_name"
+  verbose_msg "Syncing from $bucket_name to local dir $target_dir using profile $profile_name"
+  
+  if ! check_bucket ; then
+    error_msg "Error accessing bucket $bucket_name  - exiting " 
+    exit $E_BUCKET_ERR
+  fi
+
+  if [[ ! -d $target_dir ]] ; then
+    mkdir -p $target_dir ||  { error_msg "Unable to create directory $target_dir " ; exit $E_RUNTIME ; }
+  fi
+  
+  sync
+}
+
+main $*
